@@ -1,0 +1,25 @@
+.dashboard {
+  min-height: 100vh;
+  background: #020617;
+  color: white;
+  padding: 40px;
+  font-family: Arial, sans-serif;
+}
+
+.dashboard h1 {
+  margin-bottom: 10px;
+}
+
+.dashboard button {
+  margin-top: 20px;
+  padding: 10px 16px;
+  background: #dc2626;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dashboard button:hover {
+  background: #b91c1c;
+}

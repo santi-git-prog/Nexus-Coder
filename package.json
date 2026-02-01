@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@monaco-editor/react": "^4.7.0",
+    "@uiw/react-codemirror": "^4.25.4",
+    "monaco-editor": "^0.52.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-monaco-editor": "^0.59.0"
+  }
+}
