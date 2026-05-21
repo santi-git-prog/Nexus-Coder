@@ -3,19 +3,19 @@ import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
 import { pool } from "../config/db";
+import { getSandboxMode, isCompileErrorOutput } from "../utils/sandbox";
 
-// Ensure the local temp runs directory exists in the workspace
 const TEMP_RUNS_DIR = path.join(__dirname, "..", "..", "temp_runs");
 if (!fs.existsSync(TEMP_RUNS_DIR)) {
   fs.mkdirSync(TEMP_RUNS_DIR, { recursive: true });
 }
 
+const EXECUTABLE_NAME = process.platform === "win32" ? "solution.exe" : "solution";
+
 export const executeCode = async (req: Request, res: Response) => {
-  // Extract userId injected by authMiddleware
   const userId = (req as any).userId;
   const { code, language, input = "" } = req.body;
 
-  // Validation
   if (!code) {
     return res.status(400).json({ message: "Code cannot be empty" });
   }
@@ -25,131 +25,256 @@ export const executeCode = async (req: Request, res: Response) => {
   }
 
   if (language.toLowerCase() !== "c") {
-    return res.status(400).json({ message: "Initially only C language is supported" });
+    return res.status(400).json({ message: "Currently only C language is supported" });
   }
 
-  // Create a unique temporary directory inside the workspace for this execution
   const runId = `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const runDir = path.join(TEMP_RUNS_DIR, runId);
   fs.mkdirSync(runDir, { recursive: true });
 
   const sourceFile = path.join(runDir, "solution.c");
-  const execFile = path.join(runDir, "solution.exe");
+  fs.writeFileSync(sourceFile, code, "utf8");
 
-  try {
-    // 1. Write the source code to a local file
-    fs.writeFileSync(sourceFile, code, "utf8");
+  const sandboxMode = getSandboxMode();
+  console.log(`Code Execution Triggered: Sandbox Mode = ${sandboxMode}`);
 
-    // 2. Compile the C code using GCC
-    // We run compile step synchronously or with spawn. exec/spawn is fine.
-    // Let's spawn gcc to compile.
-    const compileProcess = spawn("gcc", ["-O2", sourceFile, "-o", execFile]);
-
-    let compileStderr = "";
-    let compileStdout = "";
-
-    compileProcess.stdout.on("data", (data) => {
-      compileStdout += data.toString();
-    });
-
-    compileProcess.stderr.on("data", (data) => {
-      compileStderr += data.toString();
-    });
-
-    compileProcess.on("close", async (compileCode) => {
-      if (compileCode !== 0) {
-        // Compile Error!
-        const status = "Compile Error";
-        const outputMessage = compileStderr || compileStdout || "Unknown compilation error";
-
-        // Save submission in Supabase
-        await saveSubmission(userId, "c", code, input, outputMessage, status);
-
-        // Clean up directory
-        cleanupDir(runDir);
-
-        return res.json({
-          stdout: "",
-          stderr: outputMessage,
-          compile_error: outputMessage,
-          status,
-        });
-      }
-
-      // 3. Execution Phase
-      // Run the compiled executable solution.exe
-      const runProcess = spawn(execFile);
-
-      let stdoutData = "";
-      let stderrData = "";
-      let isTimedOut = false;
-
-      // Impose a 5 seconds execution timeout limit
-      const timeout = setTimeout(() => {
-        isTimedOut = true;
-        try {
-          runProcess.kill("SIGKILL");
-        } catch (e) {
-          // ignore
-        }
-      }, 5000);
-
-      // Pipe the custom stdin input to the process
-      if (input) {
-        runProcess.stdin.write(input);
-      }
-      runProcess.stdin.end();
-
-      runProcess.stdout.on("data", (data) => {
-        stdoutData += data.toString();
-      });
-
-      runProcess.stderr.on("data", (data) => {
-        stderrData += data.toString();
-      });
-
-      runProcess.on("close", async (exitCode) => {
-        clearTimeout(timeout);
-
-        let status = "Success";
-        let finalOutput = stdoutData;
-
-        if (isTimedOut) {
-          status = "Time Limit Exceeded";
-          finalOutput = "Error: Execution timed out (Time Limit Exceeded - 5s max)";
-        } else if (exitCode !== 0) {
-          status = "Runtime Error";
-          finalOutput = stderrData || `Runtime Error (Process exited with code ${exitCode})`;
-        }
-
-        // Save submission in Supabase
-        await saveSubmission(
-          userId, 
-          "c", 
-          code, 
-          input, 
-          finalOutput, 
-          status
-        );
-
-        // Clean up directory
-        cleanupDir(runDir);
-
-        return res.json({
-          stdout: stdoutData,
-          stderr: isTimedOut ? "Execution timed out" : stderrData,
-          compile_error: "",
-          status,
-        });
-      });
-    });
-  } catch (error: any) {
+  if (sandboxMode === "none") {
     cleanupDir(runDir);
-    return res.status(500).json({ message: "Server sandbox error: " + error.message });
+    return res.status(503).json({
+      message:
+        "No C compiler available. Install GCC (MinGW) on the server, or install Docker and pull the gcc image.",
+      stdout: "",
+      stderr:
+        "No C compiler available. Install GCC (MinGW) on the server, or install Docker and pull the gcc image.",
+      compile_error:
+        "No C compiler available. Install GCC (MinGW) on the server, or install Docker and pull the gcc image.",
+      status: "Compile Error",
+    });
   }
+
+  if (sandboxMode === "docker") {
+    return runInDocker(res, { userId, code, input, runDir, sourceFile });
+  }
+
+  return runLocally(res, { userId, code, input, runDir, sourceFile });
 };
 
-// Helper function to save run details to Supabase/PostgreSQL
+type RunContext = {
+  userId: string;
+  code: string;
+  input: string;
+  runDir: string;
+  sourceFile: string;
+};
+
+const runInDocker = (res: Response, ctx: RunContext) => {
+  const { userId, code, input, runDir } = ctx;
+  const hostAbsPath = path.resolve(runDir);
+
+  const dockerProcess = spawn("docker", [
+    "run",
+    "--rm",
+    "-i",
+    "--memory=128m",
+    "--cpus=0.5",
+    "-v",
+    `${hostAbsPath}:/workspace`,
+    "-w",
+    "/workspace",
+    "--entrypoint",
+    "sh",
+    "gcc",
+    "-c",
+    "gcc -O2 solution.c -o solution && ./solution",
+  ]);
+
+  let stdoutData = "";
+  let stderrData = "";
+  let isTimedOut = false;
+  let responded = false;
+
+  const finish = async (
+    status: string,
+    stdout: string,
+    stderr: string,
+    compileError: string
+  ) => {
+    if (responded) return;
+    responded = true;
+    void saveSubmission(userId, "c", code, input, stdout || stderr || compileError, status);
+    cleanupDir(runDir);
+    return res.json({
+      stdout,
+      stderr,
+      compile_error: compileError,
+      status,
+    });
+  };
+
+  const timeout = setTimeout(() => {
+    isTimedOut = true;
+    try {
+      dockerProcess.kill("SIGKILL");
+    } catch {
+      /* ignore */
+    }
+  }, 5000);
+
+  dockerProcess.on("error", () => {
+    clearTimeout(timeout);
+    if (responded) return;
+    console.warn("Docker execution failed; falling back to local GCC.");
+    return runLocally(res, ctx);
+  });
+
+  if (input) {
+    dockerProcess.stdin.write(input);
+  }
+  dockerProcess.stdin.end();
+
+  dockerProcess.stdout.on("data", (data) => {
+    stdoutData += data.toString();
+  });
+
+  dockerProcess.stderr.on("data", (data) => {
+    stderrData += data.toString();
+  });
+
+  dockerProcess.on("close", async (exitCode) => {
+    clearTimeout(timeout);
+    if (responded) return;
+
+    if (isTimedOut) {
+      return finish(
+        "Time Limit Exceeded",
+        "Error: Execution timed out (Time Limit Exceeded - 5s max)",
+        "Execution timed out",
+        ""
+      );
+    }
+
+    if (exitCode !== 0) {
+      if (isCompileErrorOutput(stderrData, stdoutData)) {
+        return finish("Compile Error", "", "", stderrData);
+      }
+      return finish(
+        "Runtime Error",
+        "",
+        stderrData || `Runtime Error (Process exited with code ${exitCode})`,
+        ""
+      );
+    }
+
+    return finish("Success", stdoutData, "", "");
+  });
+};
+
+const runLocally = (res: Response, ctx: RunContext) => {
+  const { userId, code, input, runDir, sourceFile } = ctx;
+  const execFile = path.join(runDir, EXECUTABLE_NAME);
+
+  const compileProcess = spawn("gcc", ["-O2", sourceFile, "-o", execFile]);
+  let compileStderr = "";
+  let responded = false;
+
+  const respondOnce = (payload: Parameters<Response["json"]>[0], statusCode = 200) => {
+    if (responded) return;
+    responded = true;
+    cleanupDir(runDir);
+    return res.status(statusCode).json(payload);
+  };
+
+  compileProcess.on("error", (err: any) => {
+    const errorMsg =
+      err.code === "ENOENT"
+        ? "GCC compiler not found on this system. Please install GCC (MinGW) or start Docker Desktop with the gcc image."
+        : `Failed to start compiler: ${err.message}`;
+    void saveSubmission(userId, "c", code, input, errorMsg, "Compile Error");
+    return respondOnce({
+      stdout: "",
+      stderr: errorMsg,
+      compile_error: errorMsg,
+      status: "Compile Error",
+    }, 500);
+  });
+
+  compileProcess.stderr.on("data", (data) => {
+    compileStderr += data.toString();
+  });
+
+  compileProcess.on("close", (compileCode) => {
+    if (compileCode !== 0) {
+      void saveSubmission(userId, "c", code, input, compileStderr, "Compile Error");
+      return respondOnce({
+        stdout: "",
+        stderr: compileStderr,
+        compile_error: compileStderr,
+        status: "Compile Error",
+      });
+    }
+
+    const runProcess = spawn(execFile);
+    let stdoutData = "";
+    let stderrData = "";
+    let isTimedOut = false;
+
+    runProcess.on("error", async (err: any) => {
+      return respondOnce({
+        stdout: "",
+        stderr: `Failed to run compiled program: ${err.message}`,
+        compile_error: "",
+        status: "Runtime Error",
+      }, 500);
+    });
+
+    const timeout = setTimeout(() => {
+      isTimedOut = true;
+      try {
+        runProcess.kill("SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }, 5000);
+
+    if (input) {
+      runProcess.stdin.write(input);
+    }
+    runProcess.stdin.end();
+
+    runProcess.stdout.on("data", (data) => {
+      stdoutData += data.toString();
+    });
+
+    runProcess.stderr.on("data", (data) => {
+      stderrData += data.toString();
+    });
+
+    runProcess.on("close", (exitCode) => {
+      clearTimeout(timeout);
+
+      let status = "Success";
+      let finalOutput = stdoutData;
+
+      if (isTimedOut) {
+        status = "Time Limit Exceeded";
+        finalOutput = "Error: Execution timed out (Time Limit Exceeded - 5s max)";
+      } else if (exitCode !== 0) {
+        status = "Runtime Error";
+        finalOutput = stderrData || `Runtime Error (Process exited with code ${exitCode})`;
+      }
+
+      void saveSubmission(userId, "c", code, input, finalOutput, status);
+
+      return respondOnce({
+        stdout: stdoutData,
+        stderr: isTimedOut ? "Execution timed out" : stderrData,
+        compile_error: "",
+        status,
+      });
+    });
+  });
+};
+
 const saveSubmission = async (
   userId: string,
   language: string,
@@ -165,18 +290,16 @@ const saveSubmission = async (
       [userId, language, code, input, output, status]
     );
   } catch (err) {
-    console.error("Error saving submission to database:", err);
+    console.error("Error saving submission in DB:", err);
   }
 };
 
-// Helper function to recursively remove execution directories and files
 const cleanupDir = (dirPath: string) => {
   try {
     if (fs.existsSync(dirPath)) {
-      // Node.js rmSync is standard in newer node versions
       fs.rmSync(dirPath, { recursive: true, force: true });
     }
   } catch (err) {
-    console.error(`Failed to clean up path ${dirPath}:`, err);
+    console.error(`Failed cleanup: ${dirPath}`, err);
   }
 };

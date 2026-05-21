@@ -2,8 +2,10 @@ import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Problems from "./pages/Problems";
-import CodingWorkspace from "./pages/CodingWorkspace.tsx";
+import ProblemSets from "./pages/ProblemSets";
+import ProblemList from "./pages/ProblemList";
+import AdminDashboard from "./pages/AdminDashboard";
+import CodingWorkspace from "./pages/CodingWorkspace";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 export default function App() {
@@ -23,7 +25,23 @@ export default function App() {
         path="/problems"
         element={
           <ProtectedRoute>
-            <Problems />
+            <ProblemSets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/problems/set/:setId"
+        element={
+          <ProtectedRoute>
+            <ProblemList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
           </ProtectedRoute>
         }
       />
@@ -38,4 +56,3 @@ export default function App() {
     </Routes>
   );
 }
-

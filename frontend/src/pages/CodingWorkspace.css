@@ -1,452 +1,605 @@
-/* Modern Dark-Themed IDE CSS Variables */
+/* Glassmorphism Dark theme variables */
 :root {
-  --bg-workspace: linear-gradient(135deg, #0b0813 0%, #110d21 50%, #06040a 100%);
-  --bg-panel: rgba(18, 14, 33, 0.65);
-  --bg-terminal: #07050e;
-  --border-glow: rgba(139, 92, 246, 0.15);
-  --border-dim: rgba(255, 255, 255, 0.08);
-  --text-main: #f3f1f8;
-  --text-dim: #9ca3af;
-  --primary-glow: #8b5cf6;
-  --primary-gradient: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --accent-amber: #f59e0b;
-  --accent-orange: #f97316;
+  --bg-deep: #0a0514;
+  --bg-panel: rgba(22, 12, 38, 0.6);
+  --border-glass: rgba(147, 51, 234, 0.2);
+  --border-hover: rgba(168, 85, 247, 0.4);
+  --text-main: #f3e8ff;
+  --text-muted: #c084fc;
+  --primary-glow: rgba(139, 92, 246, 0.15);
+  --easy-color: #10b981;
+  --medium-color: #f59e0b;
+  --hard-color: #ef4444;
 }
 
-/* Base Workspace Style */
-.workspace-container {
+/* Master Layout Pane */
+.workspace-wrapper {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  background: var(--bg-workspace);
+  background: var(--bg-deep);
   color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', sans-serif;
   overflow: hidden;
 }
 
-/* Glassmorphic Navbar */
+/* Navbar */
 .workspace-header {
+  height: 55px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  height: 64px;
-  background: rgba(13, 10, 24, 0.7);
+  align-items: center;
+  padding: 0 1.5rem;
+  background: rgba(10, 5, 20, 0.85);
+  border-bottom: 1px solid var(--border-glass);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-dim);
-  z-index: 100;
+  z-index: 10;
 }
 
 .workspace-logo-area {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.workspace-logo-area h1 {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  background: linear-gradient(90deg, #a78bfa, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin: 0;
+  gap: 0.6rem;
 }
 
 .logo-icon {
-  font-size: 22px;
+  font-size: 1.4rem;
+  filter: drop-shadow(0 0 6px #a855f7);
+}
+
+.workspace-logo-area h1 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f3e8ff 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.current-problem-indicator {
+  color: #c084fc;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  opacity: 0.9;
 }
 
 .workspace-header-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-.nav-link {
-  color: var(--text-dim);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.nav-link:hover {
-  color: var(--text-main);
+  gap: 1.2rem;
 }
 
 .logout-button {
   background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border-dim);
-  padding: 6px 14px;
-  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .logout-button:hover {
+  background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.4);
-  color: var(--accent-red);
-  background: rgba(239, 68, 68, 0.05);
 }
 
-/* Main Split Layout Grid */
-.workspace-main {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
+/* Split Pane Grid */
+.workspace-content-pane {
+  flex-direction: row; /* ensure side-by-side layout */
   flex: 1;
+  display: flex;
   overflow: hidden;
-  height: calc(100vh - 64px);
+  position: relative;
 }
 
-/* Left Editor Panel styling */
-.editor-panel-wrapper {
+/* LEFT SIDEBAR: Problem Details */
+.problem-description-panel {
+  width: 42%;
+  min-width: 350px;
+  border-right: 1px solid var(--border-glass);
+  background: rgba(15, 8, 28, 0.55);
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-dim);
-  background: rgba(9, 7, 17, 0.3);
   overflow: hidden;
 }
 
-.editor-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  height: 52px;
-  background: rgba(18, 14, 33, 0.4);
-  border-bottom: 1px solid var(--border-dim);
+.problem-panel-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.15);
 }
 
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.problem-panel-header h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 0.8rem;
+  color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
-.toolbar-right {
+.problem-meta-row {
   display: flex;
   align-items: center;
+  gap: 1rem;
 }
 
-/* Reusable components details inside IDE Toolbar */
-.language-selector-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.panel-label {
-  font-size: 12px;
+.diff-tag-workspace {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.diff-tag-workspace.easy {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.diff-tag-workspace.medium {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.diff-tag-workspace.hard {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.problem-tags-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.tag-pill {
+  font-size: 0.75rem;
   font-weight: 600;
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
 }
 
-.language-dropdown {
-  background: rgba(15, 12, 28, 0.8);
-  border: 1px solid var(--border-dim);
-  color: var(--text-main);
-  padding: 6px 12px;
+.problem-panel-body {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.problem-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.problem-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.25);
+  border-radius: 3px;
+}
+
+.description-section h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #c084fc;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.markdown-desc {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #e9d5ff;
+}
+
+.format-text {
+  font-size: 0.93rem;
+  line-height: 1.5;
+  color: #d8b4fe;
+}
+
+.constraints-block {
+  background: rgba(10, 5, 20, 0.4);
+  border: 1px solid rgba(147, 51, 234, 0.1);
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.88rem;
+  color: #c084fc;
+}
+
+/* Sample testcase card designs */
+.samples-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 0.6rem;
+}
+
+.sample-card {
+  background: rgba(10, 5, 20, 0.5);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sample-card-header {
+  background: rgba(147, 51, 234, 0.08);
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.sample-card-header h5 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e9d5ff;
+}
+
+.sample-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.sample-io h6 {
+  font-size: 0.8rem;
+  color: #c084fc;
+  margin-bottom: 0.3rem;
+}
+
+.sample-io pre {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.5rem 0.8rem;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s ease;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #e9d5ff;
 }
 
-.language-dropdown:focus {
-  border-color: var(--primary-glow);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+/* RIGHT SIDEBAR: Monaco Editor & Output Dock */
+.editor-and-output-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0d071b;
+}
+
+/* In standalone playground, the left bar is gone and it uses full width */
+.standalone-layout .editor-and-output-panel {
+  width: 100%;
+}
+
+.editor-card-container {
+  flex: 55;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+/* Editor Toolbar */
+.editor-toolbar {
+  height: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+  background: rgba(10, 5, 20, 0.6);
+  border-bottom: 1px solid rgba(147, 51, 234, 0.15);
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .reset-code-btn {
   background: transparent;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-size: 0.82rem;
   font-weight: 500;
-  padding: 6px 10px;
+  padding: 0.35rem 0.8rem;
   border-radius: 6px;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .reset-code-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-hover);
+  background: rgba(168, 85, 247, 0.05);
 }
 
-.code-editor-container {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  background: #1e1e1e;
-}
-
-/* Premium RUN Button with pulse animation */
 .run-button {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #e9d5ff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--primary-gradient);
-  color: white;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  gap: 0.4rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.05);
 }
 
 .run-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 0 18px rgba(139, 92, 246, 0.6);
+  background: rgba(168, 85, 247, 0.22);
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
 }
 
-.run-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.run-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  background: #4b5563;
-  box-shadow: none;
-}
-
-.run-icon {
-  font-size: 14px;
-}
-
-/* Right Panels Wrapper */
-.sidebar-panels-wrapper {
-  display: grid;
-  grid-template-rows: 1fr 1.2fr;
-  height: 100%;
-  overflow: hidden;
-  background: rgba(9, 7, 17, 0.2);
-}
-
-/* Custom Input and Output panel styles */
-.input-panel, .output-panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-panel);
-  overflow: hidden;
-  border-bottom: 1px solid var(--border-dim);
-}
-
-.output-panel {
-  border-bottom: none;
-  background: rgba(10, 8, 20, 0.8);
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  min-height: 44px;
-  background: rgba(18, 14, 33, 0.4);
-  border-bottom: 1px solid var(--border-dim);
-}
-
-/* Stdin Textarea styling */
-.stdin-textarea {
-  flex: 1;
-  background: var(--bg-terminal);
+.submit-button-workspace {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
   border: none;
-  outline: none;
-  color: #c0caf5;
-  font-family: 'Fira Code', 'Consolas', monospace;
-  font-size: 13.5px;
-  padding: 16px;
-  resize: none;
-  line-height: 1.5;
-  transition: background-color 0.2s ease;
-}
-
-.stdin-textarea:focus {
-  background: #0d0a17;
-}
-
-/* Sleek Terminal Display Screen */
-.terminal-display {
-  flex: 1;
-  background: var(--bg-terminal);
-  padding: 16px;
-  overflow-y: auto;
-  font-family: 'Fira Code', 'Consolas', monospace;
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-
-.terminal-content {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.stdout-text {
-  color: #a9b1d6;
-}
-
-.stderr-text {
-  color: var(--accent-red);
-}
-
-.compile-error-text {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.05);
-  padding: 12px;
-  border-radius: 6px;
-  border-left: 3px solid var(--accent-red);
-}
-
-.terminal-empty-text {
-  color: #565f89;
-  font-style: italic;
-  margin: 0;
-}
-
-.terminal-running-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.terminal-loading-text {
-  color: #7aa2f7;
-  font-style: italic;
-  animation: pulse-loading 1.5s infinite ease-in-out;
-}
-
-/* Status Badges */
-.output-header {
-  justify-content: space-between;
-}
-
-.output-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.status-badge {
-  font-size: 11px;
+  color: #ffffff;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-}
-
-.status-badge.idle {
-  background: rgba(107, 114, 128, 0.15);
-  color: #9ca3af;
-  border: 1px solid rgba(107, 114, 128, 0.3);
-}
-
-.status-badge.success {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--accent-green);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
-}
-
-.status-badge.compile-error {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--accent-red);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.status-badge.runtime-error {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--accent-amber);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.status-badge.timeout {
-  background: rgba(249, 115, 22, 0.15);
-  color: var(--accent-orange);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-}
-
-.status-badge.running {
-  background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  display: inline-flex;
+  padding: 0.42rem 1.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.4rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 12px rgba(236, 72, 153, 0.2);
+}
+
+.submit-button-workspace:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(236, 72, 153, 0.35);
+}
+
+.run-button:disabled, .submit-button-workspace:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Spinner Icon */
 .spinner-icon {
-  width: 10px;
-  height: 10px;
-  border: 2px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-left-color: #ffffff;
   border-radius: 50%;
-  animation: spin-anim 0.6s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-/* Terminal Buttons */
-.clear-btn {
-  background: transparent;
-  border: 1px solid var(--border-dim);
-  color: var(--text-dim);
-  font-size: 11px;
-  padding: 4px 10px;
+.workspace-monaco-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.code-editor-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Stdin + Output Terminal Dock */
+.terminal-dock {
+  flex: 45;
+  display: flex;
+  overflow: hidden;
+  background: #090412;
+}
+
+.dock-left {
+  width: 32%;
+  min-width: 260px;
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* LeetCode Submissions Results view inside Terminal */
+.submit-results-view {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.submit-results-view::-webkit-scrollbar {
+  width: 6px;
+}
+
+.submit-results-view::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.2);
+  border-radius: 3px;
+}
+
+.submit-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.submit-status {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 0.4rem 1.2rem;
+  border-radius: 6px;
+}
+
+.submit-status.accepted { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+.submit-status.wrong-answer { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+.submit-status.compile-error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+.submit-status.runtime-error { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; }
+.submit-status.timeout { background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); color: #fb923c; }
+
+.submission-stats {
+  font-size: 0.95rem;
+  color: #d8b4fe;
+}
+
+.submission-stats strong {
+  color: #f3e8ff;
+  font-size: 1.05rem;
+}
+
+/* Horizontal pill list of testcases */
+.testcase-outcome-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+  padding-bottom: 0.8rem;
+}
+
+.tc-pill-btn {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
   transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
-.clear-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--text-dim);
+.tc-pill-btn.passed {
+  background: rgba(16, 185, 129, 0.06);
+  color: #34d399;
 }
 
-/* Animations */
-@keyframes spin-anim {
-  to { transform: rotate(360deg); }
+.tc-pill-btn.failed {
+  background: rgba(239, 68, 68, 0.06);
+  color: #f87171;
 }
 
-@keyframes pulse-loading {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+.tc-pill-btn.active.passed {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.tc-pill-btn.active.failed {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(18, 14, 33, 0.2);
+/* Detailed result outcome card */
+.testcase-details-card {
+  background: rgba(10, 5, 20, 0.6);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  padding: 1.2rem;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+.public-testcase-card h5, .hidden-testcase-card h5 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c084fc;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+.detail-io-block {
+  margin-bottom: 1rem;
+}
+
+.detail-io-block h6 {
+  font-size: 0.8rem;
+  color: #a78bfa;
+  margin-bottom: 0.3rem;
+}
+
+.detail-io-block pre {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(147, 51, 234, 0.05);
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+}
+
+.stdout-green { color: #34d399; }
+.stdout-red { color: #f87171; }
+.stderr-text-box { color: #fbbf24; }
+
+/* Secure Locked Hidden Testcase Card */
+.hidden-testcase-card {
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+
+.hidden-lock-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.8rem;
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.3));
+}
+
+.hidden-testcase-card p {
+  font-size: 0.9rem;
+  color: #a78bfa;
+  margin-bottom: 1.2rem;
+}
+
+.status-pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+}
+
+.status-pill.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+.status-pill.danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+
+.submit-error-log pre {
+  background: #0c0617;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Loading & Overlay states */
+.problem-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  z-index: 100;
 }

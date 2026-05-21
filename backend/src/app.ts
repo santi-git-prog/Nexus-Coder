@@ -5,7 +5,6 @@ import userRoutes from "./routes/user.routes";
 import jwt from "jsonwebtoken";
 import { authMiddleware } from "./middleware/auth.middleware";
 import problemsRoutes from "./routes/problems.routes";
-import submissionsRoutes from "./routes/submissions.routes";
 import executeRoutes from "./routes/execute.routes";
 
 const app = express();
@@ -15,8 +14,7 @@ app.use(express.json());
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/problems", problemsRoutes);
-app.use("/api/submissions", submissionsRoutes);
+app.use("/api", problemsRoutes);
 app.use("/api/execute", executeRoutes);
 
 app.get("/", (_req, res) => {
