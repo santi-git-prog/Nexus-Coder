@@ -48,9 +48,13 @@ export default function AdminDashboard() {
   const [probInputFormat, setProbInputFormat] = useState("");
   const [probOutputFormat, setProbOutputFormat] = useState("");
   const [probConstraints, setProbConstraints] = useState("");
-  const [probStarterCode, setProbStarterCode] = useState(
-    `#include <stdio.h>\n\nint main() {\n    // Write your C code here\n    return 0;\n}`
+  const [probType, setProbType] = useState<"stdio" | "function">("function");
+  const [probFunctionName, setProbFunctionName] = useState("twoSum");
+  const [probReturnType, setProbReturnType] = useState("int*");
+  const [probParameters, setProbParameters] = useState(
+    '[\n  { "name": "nums", "type": "int[]" },\n  { "name": "target", "type": "int" }\n]'
   );
+  const [probStarterCode, setProbStarterCode] = useState("");
 
   // 3. Testcase Form
   const [tcInput, setTcInput] = useState("");
@@ -128,6 +132,18 @@ export default function AdminDashboard() {
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0);
 
+      let parsedParams: unknown[] = [];
+      if (probType === "function") {
+        try {
+          parsedParams = JSON.parse(probParameters);
+          if (!Array.isArray(parsedParams)) throw new Error("Parameters must be a JSON array");
+        } catch {
+          showNotification("Parameters must be a valid array (see format hint).", "error");
+          setLoading(false);
+          return;
+        }
+      }
+
       await api.post("/admin/problems", {
         problem_set_id: probSetId,
         title: probTitle,
@@ -138,6 +154,10 @@ export default function AdminDashboard() {
         output_format: probOutputFormat,
         constraints: probConstraints,
         starter_code: probStarterCode,
+        problem_type: probType,
+        function_name: probType === "function" ? probFunctionName : undefined,
+        return_type: probType === "function" ? probReturnType : undefined,
+        parameters: probType === "function" ? parsedParams : [],
       });
 
       showNotification(`Problem "${probTitle}" uploaded successfully!`, "success");
@@ -387,14 +407,66 @@ export default function AdminDashboard() {
                 />
               </div>
 
+              <div className="form-row-grid">
+                <div className="form-group">
+                  <label htmlFor="prob-type">Problem Style</label>
+                  <select
+                    id="prob-type"
+                    value={probType}
+                    onChange={(e) => setProbType(e.target.value as "stdio" | "function")}
+                  >
+                    <option value="function">Function (LeetCode-style)</option>
+                    <option value="stdio">Stdin/Stdout (competitive)</option>
+                  </select>
+                </div>
+              </div>
+
+              {probType === "function" && (
+                <>
+                  <div className="form-row-grid">
+                    <div className="form-group">
+                      <label htmlFor="prob-fn">Function Name</label>
+                      <input
+                        id="prob-fn"
+                        type="text"
+                        value={probFunctionName}
+                        onChange={(e) => setProbFunctionName(e.target.value)}
+                        placeholder="twoSum"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="prob-ret">Return Type</label>
+                      <input
+                        id="prob-ret"
+                        type="text"
+                        value={probReturnType}
+                        onChange={(e) => setProbReturnType(e.target.value)}
+                        placeholder="int*, int, bool, void"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="prob-params">Parameters (name + type list)</label>
+                    <textarea
+                      id="prob-params"
+                      className="code-textarea-field"
+                      value={probParameters}
+                      onChange={(e) => setProbParameters(e.target.value)}
+                      rows={5}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="form-group">
-                <label htmlFor="prob-starter">Starter Template Code (C)</label>
+                <label htmlFor="prob-starter">Starter Template Code (C) — leave empty to auto-generate for function problems</label>
                 <textarea 
                   id="prob-starter" 
                   className="code-textarea-field"
                   value={probStarterCode}
                   onChange={(e) => setProbStarterCode(e.target.value)}
                   rows={8}
+                  placeholder={probType === "function" ? "Auto-generated from signature if empty" : "#include <stdio.h>..."}
                 />
               </div>
 
@@ -443,23 +515,23 @@ export default function AdminDashboard() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="tc-input">Standard Input (stdin)</label>
+                <label htmlFor="tc-input">Test Input</label>
                 <textarea 
                   id="tc-input" 
                   value={tcInput}
                   onChange={(e) => setTcInput(e.target.value)}
-                  placeholder="Input arguments to be piped into stdin..."
+                  placeholder="Function: nums = [2,7,11,15], target = 9  |  Stdio: raw stdin"
                   rows={4}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="tc-output">Expected Output (stdout)</label>
+                <label htmlFor="tc-output">Expected Output</label>
                 <textarea 
                   id="tc-output" 
                   value={tcExpectedOutput}
                   onChange={(e) => setTcExpectedOutput(e.target.value)}
-                  placeholder="The exact output compiled program must return..."
+                  placeholder="Function: [0, 1]  |  Stdio: exact stdout"
                   rows={4}
                   required
                 />

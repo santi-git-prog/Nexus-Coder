@@ -11,6 +11,7 @@ import {
   getSampleTestcases,
 } from "../controllers/problems.controller";
 import { submitProblemSolution } from "../controllers/submissions.controller";
+import { runProblemCode } from "../controllers/run.controller";
 
 const router = Router();
 
@@ -27,7 +28,8 @@ router.post("/admin/problems", authMiddleware, adminMiddleware, createProblem);
 router.post("/admin/problems/:problemId/testcases", authMiddleware, adminMiddleware, createTestcase);
 router.get("/problems/:problemId/sample-testcases", authMiddleware, getSampleTestcases);
 
-// Submission route
+// Run (sample / custom) and submit routes
+router.post("/problems/:problemId/run", authMiddleware, runProblemCode);
 router.post("/problems/:problemId/submit", authMiddleware, submitProblemSolution);
 
 export default router;

@@ -6,6 +6,7 @@ import LanguageSelector from "../components/LanguageSelector";
 import CodeEditor from "../components/CodeEditor";
 import InputPanel from "../components/InputPanel";
 import OutputPanel from "../components/OutputPanel";
+import { formatArgsDisplay, formatOutputDisplay } from "../utils/leetcodeDisplay";
 import "./CodingWorkspace.css";
 
 const STANDALONE_C_TEMPLATE = `#include <stdio.h>
@@ -15,6 +16,12 @@ int main() {
     return 0;
 }
 `;
+
+type ProblemParameter = {
+  name: string;
+  type: string;
+  sizeParam?: string;
+};
 
 type ProblemDetail = {
   id: string;
@@ -27,12 +34,18 @@ type ProblemDetail = {
   output_format: string;
   constraints: string;
   starter_code: string;
+  problem_type?: string;
+  function_name?: string;
+  return_type?: string;
+  parameters?: ProblemParameter[] | string;
 };
 
 type SampleTestcase = {
   id: string;
   input: string;
   expected_output: string;
+  input_display?: string;
+  expected_output_display?: string;
 };
 
 type TestcaseResult = {
@@ -43,6 +56,9 @@ type TestcaseResult = {
   input?: string;
   expected_output?: string;
   actual_output?: string;
+  input_display?: string;
+  expected_output_display?: string;
+  actual_output_display?: string;
   error_message?: string;
 };
 
@@ -67,6 +83,9 @@ export default function CodingWorkspace() {
   const [language, setLanguage] = useState<string>("c");
   const [code, setCode] = useState<string>(STANDALONE_C_TEMPLATE);
   const [input, setInput] = useState<string>("");
+  const [customExpected, setCustomExpected] = useState<string>("");
+  const [inputMode, setInputMode] = useState<"sample" | "custom">("sample");
+  const [runPanelMode, setRunPanelMode] = useState<"console" | "testcases">("console");
 
   // Problem loaded states
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
@@ -132,34 +151,142 @@ export default function CodingWorkspace() {
     fetchProblemData();
   }, [problemId]);
 
+  const isFunctionProblem =
+    problem?.problem_type?.toLowerCase() === "function" &&
+    Boolean(problem.function_name && problem.return_type);
+
+  const buildSignaturePreview = (): string => {
+    if (!problem?.function_name || !problem?.return_type) return "";
+    const params = Array.isArray(problem.parameters)
+      ? problem.parameters
+      : typeof problem.parameters === "string"
+        ? (() => {
+            try {
+              return JSON.parse(problem.parameters);
+            } catch {
+              return [];
+            }
+          })()
+        : [];
+    const parts: string[] = [];
+    for (const p of params) {
+      const t = (p.type || "int").toLowerCase();
+      if (t.endsWith("[]")) {
+        const sizeName = p.sizeParam || `${p.name}Size`;
+        parts.push(`${t.replace("[]", "*")} ${p.name}, int ${sizeName}`);
+      } else {
+        parts.push(`${t} ${p.name}`);
+      }
+    }
+    if (problem.return_type.includes("*")) {
+      parts.push("int* returnSize");
+    }
+    return `${problem.return_type} ${problem.function_name}(${parts.join(", ")})`;
+  };
+
   const handleRun = async () => {
     if (!code.trim()) return;
 
     setRunStatus("Running");
-    setShowSubmitPanel(false);
     setStdout("");
     setStderr("");
     setCompileError("");
 
+    let clearRunningOnly = false;
+
     try {
-      const response = await api.post("/execute", {
-        code,
-        language,
-        input,
-      });
+      if (problemId && problem) {
+        const useFunctionCustom = isFunctionProblem && inputMode === "custom";
+        const useStdioCustom = !isFunctionProblem && input.trim().length > 0;
 
+        if (useStdioCustom) {
+          setShowSubmitPanel(false);
+          setRunPanelMode("console");
+          const response = await api.post("/execute", { code, language, input });
+          const { stdout, stderr, compile_error, status } = response.data;
+          setStdout(stdout);
+          setStderr(stderr);
+          setCompileError(compile_error);
+          setRunStatus(status);
+          return;
+        }
+
+        if (useFunctionCustom && !input.trim()) {
+          setShowSubmitPanel(false);
+          setRunPanelMode("console");
+          setRunStatus("Runtime Error");
+          setStderr("Enter arguments in Custom Input (e.g. nums = [2,7], target = 9).");
+          return;
+        }
+
+        if (useFunctionCustom) {
+          setShowSubmitPanel(false);
+          setRunPanelMode("console");
+          const response = await api.post(`/problems/${problemId}/run`, {
+            code,
+            language,
+            mode: "custom",
+            custom_input: input,
+            custom_expected: customExpected,
+          });
+          const data = response.data;
+          const out = data.stdout || "";
+          setStdout(isFunctionProblem ? formatOutputDisplay(out) || out : out);
+          setStderr(data.stderr || "");
+          setCompileError(data.compile_error || "");
+          let status = data.status || "Success";
+          if (data.passed === false) status = "Wrong Answer";
+          setRunStatus(status);
+          return;
+        }
+
+        clearRunningOnly = true;
+        setSubmitting(false);
+        setShowSubmitPanel(true);
+        setRunPanelMode("testcases");
+        setSubmission(null);
+
+        const response = await api.post(`/problems/${problemId}/run`, {
+          code,
+          language,
+          mode: "sample",
+        });
+
+        const data = response.data;
+        setSubmission({
+          status: data.status,
+          passed_count: data.passed_count,
+          total_count: data.total_count,
+          output_summary: data.output_summary,
+          testcase_results: data.testcase_results || [],
+        });
+        if (data.testcase_results?.length > 0) {
+          const firstFailed = data.testcase_results.find((r: TestcaseResult) => !r.passed);
+          setActiveTcResultId(firstFailed ? firstFailed.id : data.testcase_results[0].id);
+        }
+        return;
+      }
+
+      setShowSubmitPanel(false);
+      setRunPanelMode("console");
+      const response = await api.post("/execute", { code, language, input });
       const { stdout, stderr, compile_error, status } = response.data;
-
       setStdout(stdout);
       setStderr(stderr);
       setCompileError(compile_error);
       setRunStatus(status);
     } catch (err: any) {
       console.error(err);
-      const data = err.response?.data;
-      setRunStatus(data?.status || "Runtime Error");
-      setCompileError(data?.compile_error || "");
-      setStderr(data?.stderr || data?.message || "An unexpected error occurred during execution.");
+      if (problemId && problem && !(isFunctionProblem && inputMode === "custom")) {
+        showSubmitError(err.response?.data?.message || "Run failed.");
+      } else {
+        const data = err.response?.data;
+        setRunStatus(data?.status || "Runtime Error");
+        setCompileError(data?.compile_error || "");
+        setStderr(data?.stderr || data?.message || "Run failed.");
+      }
+    } finally {
+      if (clearRunningOnly) setRunStatus("Idle");
     }
   };
 
@@ -168,6 +295,7 @@ export default function CodingWorkspace() {
 
     setSubmitting(true);
     setShowSubmitPanel(true);
+    setRunPanelMode("testcases");
     setSubmission(null);
     setRunStatus("Idle");
 
@@ -208,6 +336,7 @@ export default function CodingWorkspace() {
     setRunStatus("Idle");
     setSubmission(null);
     setShowSubmitPanel(false);
+    setRunPanelMode("console");
   };
 
   const handleResetCode = () => {
@@ -313,6 +442,18 @@ export default function CodingWorkspace() {
                     </div>
                   )}
 
+                  {isFunctionProblem && (
+                    <div className="description-section">
+                      <div className="function-signature-block">
+                        <h4>Function Signature</h4>
+                        <pre>{buildSignaturePreview()}</pre>
+                        <p className="format-text" style={{ marginTop: "0.5rem" }}>
+                          Implement this function only. A hidden driver calls it with each testcase.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Public Sample Testcases */}
                   {sampleTestcases.length > 0 && (
                     <div className="description-section">
@@ -325,12 +466,16 @@ export default function CodingWorkspace() {
                             </div>
                             <div className="sample-card-body">
                               <div className="sample-io">
-                                <h6>Input:</h6>
-                                <pre>{tc.input || "(empty)"}</pre>
+                                <h6>Input</h6>
+                                <pre className="leetcode-io">
+                                  {tc.input_display || formatArgsDisplay(tc.input)}
+                                </pre>
                               </div>
                               <div className="sample-io">
-                                <h6>Expected Output:</h6>
-                                <pre>{tc.expected_output}</pre>
+                                <h6>Output</h6>
+                                <pre className="leetcode-io">
+                                  {tc.expected_output_display || formatOutputDisplay(tc.expected_output)}
+                                </pre>
                               </div>
                             </div>
                           </div>
@@ -369,7 +514,11 @@ export default function CodingWorkspace() {
                       ) : (
                         <>
                           <span className="run-icon">▶</span>
-                          Run Code
+                          {problem
+                            ? isFunctionProblem && inputMode === "custom"
+                              ? "Run Custom"
+                              : "Run"
+                            : "Run Code"}
                         </>
                       )}
                     </button>
@@ -409,24 +558,41 @@ export default function CodingWorkspace() {
               <section className="terminal-dock">
                 {/* We render standard Stdin input panel always */}
                 <div className="dock-left">
-                  <InputPanel value={input} onChange={setInput} />
+                  <InputPanel
+                    value={input}
+                    onChange={setInput}
+                    mode={isFunctionProblem ? "function" : "stdio"}
+                    inputMode={inputMode}
+                    onInputModeChange={setInputMode}
+                    customExpected={customExpected}
+                    onCustomExpectedChange={setCustomExpected}
+                  />
                 </div>
 
                 <div className="dock-right">
                   {/* Toggle rendering standard compile/run output vs. testcase submission list */}
-                  {showSubmitPanel ? (
+                  {showSubmitPanel && runPanelMode === "testcases" ? (
                     <div className="output-panel">
                       <div className="panel-header output-header">
-                        <span className="panel-label">Submission Results</span>
+                        <span className="panel-label">
+                          {submitting ? "Submission Results" : "Run Results"}
+                        </span>
                         <button onClick={handleClearOutput} className="clear-btn">Clear Panel</button>
                       </div>
 
-                      <div className="terminal-display">
+                      <div className="terminal-display terminal-display-scroll">
                         {submitting ? (
                           <div className="terminal-running-state">
                             <span className="spinner"></span>
                             <p className="terminal-loading-text">
-                              Running solution against all hidden and sample testcases in secure sandbox...
+                              Running against all testcases (including hidden) in secure sandbox...
+                            </p>
+                          </div>
+                        ) : runStatus === "Running" ? (
+                          <div className="terminal-running-state">
+                            <span className="spinner"></span>
+                            <p className="terminal-loading-text">
+                              Running your code against test cases...
                             </p>
                           </div>
                         ) : submission ? (
@@ -480,17 +646,25 @@ export default function CodingWorkspace() {
                                     <div className="public-testcase-card">
                                       <h5>Evaluation Case Details</h5>
                                       <div className="detail-io-block">
-                                        <h6>Input:</h6>
-                                        <pre>{tc.input || "(empty)"}</pre>
+                                        <h6>Input</h6>
+                                        <pre className="leetcode-io">
+                                          {tc.input_display || formatArgsDisplay(tc.input || "")}
+                                        </pre>
                                       </div>
                                       <div className="detail-io-block">
-                                        <h6>Expected Output:</h6>
-                                        <pre>{tc.expected_output}</pre>
+                                        <h6>Expected</h6>
+                                        <pre className="leetcode-io">
+                                          {tc.expected_output_display ||
+                                            formatOutputDisplay(tc.expected_output || "")}
+                                        </pre>
                                       </div>
                                       <div className="detail-io-block">
-                                        <h6>Actual Output:</h6>
-                                        <pre className={tc.passed ? "stdout-green" : "stdout-red"}>
-                                          {tc.actual_output || "(empty)"}
+                                        <h6>Your Output</h6>
+                                        <pre
+                                          className={`leetcode-io ${tc.passed ? "stdout-green" : "stdout-red"}`}
+                                        >
+                                          {tc.actual_output_display ||
+                                            formatOutputDisplay(tc.actual_output || "")}
                                         </pre>
                                       </div>
                                       {tc.error_message && (
