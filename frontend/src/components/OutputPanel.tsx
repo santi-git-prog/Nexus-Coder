@@ -56,7 +56,7 @@ export default function OutputPanel({
       <div className="terminal-display">
         {status === "Running" ? (
           <div className="terminal-running-state">
-            <p className="terminal-loading-text">Compiling and running code in a secure sandbox...</p>
+            <p className="terminal-loading-text">Running...</p>
           </div>
         ) : compileError ? (
           <pre className="terminal-content compile-error-text">
@@ -75,7 +75,7 @@ export default function OutputPanel({
               </pre>
             )}
             {!stdout && !stderr && (
-              <p className="terminal-empty-text">No output yet. Click "Run" to execute your program.</p>
+              <p className="terminal-empty-text">No output yet. Click Run to test your solution.</p>
             )}
           </>
         )}

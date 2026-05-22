@@ -400,7 +400,7 @@
   height: 100%;
 }
 
-/* Stdin + Output Terminal Dock */
+/* Test input + results dock */
 .terminal-dock {
   flex: 45;
   display: flex;
@@ -468,28 +468,68 @@
   min-height: 60px;
 }
 
-.function-signature-block {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-glass);
+/* LeetCode-style examples */
+.examples-section h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f3e8ff;
+  margin-bottom: 0.75rem;
+}
+
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.leetcode-example {
+  padding: 0.85rem 1rem;
+  background: rgba(0, 0, 0, 0.28);
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  border-left: 3px solid rgba(168, 85, 247, 0.55);
 }
 
-.function-signature-block h4 {
-  font-size: 0.8rem;
-  color: #a78bfa;
-  margin-bottom: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.function-signature-block pre {
-  font-family: "Fira Code", monospace;
-  font-size: 0.82rem;
+.example-heading {
+  font-weight: 600;
   color: #e9d5ff;
-  white-space: pre-wrap;
-  margin: 0;
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.example-line {
+  margin: 0.35rem 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #d8b4fe;
+}
+
+.example-line strong {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.example-line code {
+  font-family: "Fira Code", "Consolas", monospace;
+  font-size: 0.85rem;
+  color: #f3e8ff;
+  background: transparent;
+  padding: 0;
+}
+
+.public-testcase-card .example-line {
+  margin: 0.5rem 0;
+}
+
+.hidden-testcase-card {
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.hidden-case-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin: 0 0 1rem;
 }
 
 .dock-right {
@@ -520,7 +560,7 @@
   overflow: hidden;
 }
 
-.input-panel .stdin-textarea {
+.input-panel .custom-textarea {
   flex: 1;
   min-height: 120px;
   resize: none;
@@ -536,7 +576,7 @@
   line-height: 1.5;
 }
 
-.input-panel .stdin-textarea:focus {
+.input-panel .custom-textarea:focus {
   outline: none;
   border-color: rgba(168, 85, 247, 0.45);
 }
@@ -770,23 +810,6 @@
 .stdout-red { color: #f87171; }
 .stderr-text-box { color: #fbbf24; }
 
-/* Secure Locked Hidden Testcase Card */
-.hidden-testcase-card {
-  text-align: center;
-  padding: 1.5rem 1rem;
-}
-
-.hidden-lock-icon {
-  font-size: 2.2rem;
-  margin-bottom: 0.8rem;
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.3));
-}
-
-.hidden-testcase-card p {
-  font-size: 0.9rem;
-  color: #a78bfa;
-  margin-bottom: 1.2rem;
-}
 
 .status-pill {
   display: inline-block;

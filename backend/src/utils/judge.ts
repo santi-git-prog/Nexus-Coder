@@ -8,7 +8,6 @@ import {
   TestcaseRunResult,
 } from "../types/problem";
 import {
-  isFunctionProblem,
   normalizeActualOutput,
   normalizeExpectedOutput,
   wrapUserCode,
@@ -90,7 +89,6 @@ const compileSource = (
 
 const runBinary = (
   runDir: string,
-  stdin: string,
   sandboxMode: string,
   timeoutMs: number
 ): Promise<RunOnceResult> => {
@@ -122,7 +120,6 @@ const runBinary = (
           /* ignore */
         }
       }, timeoutMs);
-      if (stdin) dockerRun.stdin.write(stdin);
       dockerRun.stdin.end();
       dockerRun.stdout.on("data", (d) => {
         stdoutData += d.toString();
@@ -156,7 +153,6 @@ const runBinary = (
         /* ignore */
       }
     }, timeoutMs);
-    if (stdin) localRun.stdin.write(stdin);
     localRun.stdin.end();
     localRun.stdout.on("data", (d) => {
       stdoutData += d.toString();
@@ -178,8 +174,7 @@ const runBinary = (
 
 const evaluateTestcase = (
   tc: TestcaseRow,
-  runResult: RunOnceResult,
-  useFunctionCompare: boolean
+  runResult: RunOnceResult
 ): { status: string; passed: boolean } => {
   const normalizedOutput = normalizeActualOutput(runResult.stdout);
   const normalizedExpected = normalizeExpectedOutput(tc.expected_output);
@@ -191,30 +186,14 @@ const evaluateTestcase = (
   return { status: "Success", passed: true };
 };
 
-const buildSourceForTestcase = (
-  userCode: string,
-  problem: FunctionProblemMeta,
-  tc: TestcaseRow,
-  useFunction: boolean
-): { source: string; stdin: string } => {
-  if (useFunction) {
-    return {
-      source: wrapUserCode(userCode, problem, tc.input),
-      stdin: "",
-    };
-  }
-  return { source: userCode, stdin: tc.input || "" };
-};
-
 export const judgeSolution = async (
   userCode: string,
   testcases: TestcaseRow[],
   problem: FunctionProblemMeta,
-  options?: { timeoutMs?: number; compileOnce?: boolean }
+  options?: { timeoutMs?: number }
 ): Promise<JudgeOutcome> => {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const sandboxMode = getSandboxMode();
-  const useFunction = isFunctionProblem(problem);
 
   if (sandboxMode === "none") {
     return {
@@ -247,10 +226,12 @@ export const judgeSolution = async (
   const resultsList: TestcaseRunResult[] = [];
 
   try {
-    // stdio problems: compile user code once, run with different stdin
-    if (!useFunction) {
-      const compile = await compileSource(runDir, userCode, sandboxMode);
+    for (let i = 0; i < testcases.length; i++) {
+      const tc = testcases[i];
+      const source = wrapUserCode(userCode, problem, tc.input);
+      const compile = await compileSource(runDir, source, sandboxMode);
       if (!compile.ok) {
+        cleanupDir(runDir);
         return {
           status: "Compile Error",
           passed_count: 0,
@@ -261,58 +242,20 @@ export const judgeSolution = async (
         };
       }
 
-      for (let i = 0; i < testcases.length; i++) {
-        const tc = testcases[i];
-        const runResult = await runBinary(runDir, tc.input || "", sandboxMode, timeoutMs);
-        const { status: tcStatus, passed } = evaluateTestcase(tc, runResult, false);
+      const runResult = await runBinary(runDir, sandboxMode, timeoutMs);
+      const { status: tcStatus, passed } = evaluateTestcase(tc, runResult);
 
-        if (tcStatus !== "Success" && submissionStatus === "Success") {
-          submissionStatus =
-            tcStatus === "Wrong Answer" ? "Wrong Answer" : tcStatus;
-        }
-        if (tcStatus === "Time Limit Exceeded") submissionStatus = "Time Limit Exceeded";
-        if (tcStatus === "Runtime Error" && submissionStatus === "Success") {
-          submissionStatus = "Runtime Error";
-        }
-        if (passed) passedCount++;
-
-        resultsList.push(buildResultRow(tc, passed, tcStatus, runResult));
-        if (!passed && !summaryText) summaryText = failureSummary(i, runResult, tcStatus);
+      if (tcStatus !== "Success" && submissionStatus === "Success") {
+        submissionStatus = tcStatus === "Wrong Answer" ? "Wrong Answer" : tcStatus;
       }
-    } else {
-      // function problems: wrap + compile per testcase (driver embeds inputs)
-      for (let i = 0; i < testcases.length; i++) {
-        const tc = testcases[i];
-        const { source } = buildSourceForTestcase(userCode, problem, tc, true);
-        const compile = await compileSource(runDir, source, sandboxMode);
-        if (!compile.ok) {
-          cleanupDir(runDir);
-          return {
-            status: "Compile Error",
-            passed_count: 0,
-            total_count: testcases.length,
-            output_summary: compile.stderr,
-            compile_error: compile.stderr,
-            testcase_results: [],
-          };
-        }
-
-        const runResult = await runBinary(runDir, "", sandboxMode, timeoutMs);
-        const { status: tcStatus, passed } = evaluateTestcase(tc, runResult, true);
-
-        if (tcStatus !== "Success" && submissionStatus === "Success") {
-          submissionStatus =
-            tcStatus === "Wrong Answer" ? "Wrong Answer" : tcStatus;
-        }
-        if (tcStatus === "Time Limit Exceeded") submissionStatus = "Time Limit Exceeded";
-        if (tcStatus === "Runtime Error" && submissionStatus === "Success") {
-          submissionStatus = "Runtime Error";
-        }
-        if (passed) passedCount++;
-
-        resultsList.push(buildResultRow(tc, passed, tcStatus, runResult));
-        if (!passed && !summaryText) summaryText = failureSummary(i, runResult, tcStatus);
+      if (tcStatus === "Time Limit Exceeded") submissionStatus = "Time Limit Exceeded";
+      if (tcStatus === "Runtime Error" && submissionStatus === "Success") {
+        submissionStatus = "Runtime Error";
       }
+      if (passed) passedCount++;
+
+      resultsList.push(buildResultRow(tc, passed, tcStatus, runResult));
+      if (!passed && !summaryText) summaryText = failureSummary(i, runResult, tcStatus);
     }
 
     if (passedCount === testcases.length) {
@@ -361,7 +304,6 @@ const failureSummary = (index: number, run: RunOnceResult, status: string): stri
   return `Testcase #${index + 1} failed (${status})`;
 };
 
-/** Run a single custom payload (function args or stdin text). */
 export const runCustomCase = async (
   userCode: string,
   problem: FunctionProblemMeta,
@@ -385,18 +327,13 @@ export const runCustomCase = async (
     };
   }
 
-  const useFunction = isFunctionProblem(problem);
   const runId = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const runDir = path.join(TEMP_RUNS_DIR, runId);
   fs.mkdirSync(runDir, { recursive: true });
 
   try {
-    const normalizedInput = useFunction
-      ? JSON.stringify(parseLeetCodeInput(customInput))
-      : customInput;
-    const source = useFunction
-      ? wrapUserCode(userCode, problem, normalizedInput)
-      : userCode;
+    const normalizedInput = JSON.stringify(parseLeetCodeInput(customInput));
+    const source = wrapUserCode(userCode, problem, normalizedInput);
     const compile = await compileSource(runDir, source, sandboxMode);
     if (!compile.ok) {
       return {
@@ -407,8 +344,7 @@ export const runCustomCase = async (
       };
     }
 
-    const stdin = useFunction ? "" : customInput;
-    const runResult = await runBinary(runDir, stdin, sandboxMode, 5000);
+    const runResult = await runBinary(runDir, sandboxMode, 5000);
 
     if (runResult.isTimedOut) {
       return {
@@ -427,7 +363,6 @@ export const runCustomCase = async (
       };
     }
 
-    const status = "Success";
     let passed: boolean | undefined;
     if (customExpected !== undefined && customExpected.trim() !== "") {
       const normalizedOutput = normalizeActualOutput(runResult.stdout);
@@ -439,7 +374,7 @@ export const runCustomCase = async (
       stdout: runResult.stdout,
       stderr: runResult.stderr,
       compile_error: "",
-      status,
+      status: passed === false ? "Wrong Answer" : "Success",
       passed,
       expected_output: customExpected,
     };

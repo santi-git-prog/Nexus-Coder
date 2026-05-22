@@ -10,7 +10,7 @@ const loadProblem = async (problemId: string) => {
 };
 
 const toFunctionMeta = (row: Record<string, unknown>): FunctionProblemMeta => ({
-  problem_type: String(row.problem_type || "stdio"),
+  problem_type: "function",
   function_name: String(row.function_name || ""),
   return_type: String(row.return_type || ""),
   parameters: parseParameters(row.parameters),

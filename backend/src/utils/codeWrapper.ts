@@ -3,8 +3,9 @@ import {
   canonicalizeExpectedOutput,
   parseLeetCodeInput,
 } from "./leetcodeDisplay";
+import { STANDARD_C_HEADERS, stripUserIncludes } from "./cDefaults";
 
-const DRIVER_MARKER = "/* __NEXUS_DRIVER__ */";
+const DRIVER_MARKER = "/* __NEXUS_INTERNAL__ */";
 
 export const isFunctionProblem = (meta: Partial<FunctionProblemMeta>): boolean =>
   (meta.problem_type || "stdio").toLowerCase() === "function" &&
@@ -210,11 +211,6 @@ export const generateDriverMain = (
 
   return [
     DRIVER_MARKER,
-    "#include <stdio.h>",
-    "#include <stdlib.h>",
-    "#include <stdbool.h>",
-    "#include <string.h>",
-    "",
     "int main(void) {",
     ...lines.map((l) => `  ${l}`),
     `  ${callLine}`,
@@ -225,7 +221,7 @@ export const generateDriverMain = (
   ].join("\n");
 };
 
-/** Combine user solution with hidden driver (LeetCode-style). */
+/** Build full compile unit: headers + user function + internal runner. */
 export const wrapUserCode = (
   userCode: string,
   meta: FunctionProblemMeta,
@@ -233,11 +229,17 @@ export const wrapUserCode = (
 ): string => {
   const input = parseTestcaseInput(testcaseInput);
   const stripped = userCode.replace(/\r/g, "").trim();
-  const withoutDriver = stripped.includes(DRIVER_MARKER)
-    ? stripped.split(DRIVER_MARKER)[0].trim()
-    : stripped;
-  return `${withoutDriver}\n\n${generateDriverMain(meta, input)}`;
+  const cutAt =
+    stripped.indexOf(DRIVER_MARKER) !== -1
+      ? stripped.indexOf(DRIVER_MARKER)
+      : stripped.indexOf("/* __NEXUS_DRIVER__ */");
+  const withoutInternal = cutAt !== -1 ? stripped.slice(0, cutAt).trim() : stripped;
+  const userBody = stripUserIncludes(withoutInternal);
+  return `${STANDARD_C_HEADERS}\n\n${userBody}\n\n${generateDriverMain(meta, input)}`;
 };
+
+/** Editor-visible starter (function body only). */
+export const sanitizeStarterCode = (code: string): string => stripUserIncludes(code.replace(/\r/g, "").trim());
 
 export const normalizeExpectedOutput = (expected: string): string =>
   canonicalizeExpectedOutput(expected);

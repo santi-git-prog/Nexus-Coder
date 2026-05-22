@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev src/index.ts",
-    "seed:two-sum": "ts-node-dev --transpile-only -P tsconfig.scripts.json scripts/seed-two-sum.ts"
+    "seed:reset": "ts-node-dev --transpile-only -P tsconfig.scripts.json scripts/seed-reset.ts"
   },
   "keywords": [],
   "author": "",

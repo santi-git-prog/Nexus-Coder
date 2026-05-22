@@ -18,7 +18,7 @@ export const formatArgsDisplay = (raw: string): string => {
   if (obj) {
     return Object.entries(obj)
       .map(([k, v]) => `${k} = ${formatValue(v)}`)
-      .join("\n");
+      .join(", ");
   }
   return trimmed;
 };

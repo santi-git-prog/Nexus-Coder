@@ -30,10 +30,14 @@ export const formatArgsDisplay = (raw: string): string => {
   if (obj) {
     return Object.entries(obj)
       .map(([k, v]) => `${k} = ${formatValue(v)}`)
-      .join("\n");
+      .join(", ");
   }
   return trimmed;
 };
+
+/** Strip #include lines from editor template. */
+export const stripEditorIncludes = (code: string): string =>
+  code.replace(/^\s*#\s*include\s*[<"][^>\n"]+[>"]\s*$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
 
 export const formatOutputDisplay = (raw: string): string => {
   const trimmed = (raw || "").trim();

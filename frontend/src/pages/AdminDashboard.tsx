@@ -45,10 +45,7 @@ export default function AdminDashboard() {
   const [probDescription, setProbDescription] = useState("");
   const [probDifficulty, setProbDifficulty] = useState("Easy");
   const [probTags, setProbTags] = useState("");
-  const [probInputFormat, setProbInputFormat] = useState("");
-  const [probOutputFormat, setProbOutputFormat] = useState("");
   const [probConstraints, setProbConstraints] = useState("");
-  const [probType, setProbType] = useState<"stdio" | "function">("function");
   const [probFunctionName, setProbFunctionName] = useState("twoSum");
   const [probReturnType, setProbReturnType] = useState("int*");
   const [probParameters, setProbParameters] = useState(
@@ -133,15 +130,13 @@ export default function AdminDashboard() {
         .filter((tag) => tag.length > 0);
 
       let parsedParams: unknown[] = [];
-      if (probType === "function") {
-        try {
-          parsedParams = JSON.parse(probParameters);
-          if (!Array.isArray(parsedParams)) throw new Error("Parameters must be a JSON array");
-        } catch {
-          showNotification("Parameters must be a valid array (see format hint).", "error");
-          setLoading(false);
-          return;
-        }
+      try {
+        parsedParams = JSON.parse(probParameters);
+        if (!Array.isArray(parsedParams)) throw new Error("Parameters must be an array");
+      } catch {
+        showNotification("Parameters must be a valid array.", "error");
+        setLoading(false);
+        return;
       }
 
       await api.post("/admin/problems", {
@@ -150,22 +145,17 @@ export default function AdminDashboard() {
         description: probDescription,
         difficulty: probDifficulty,
         tags: tagsArray,
-        input_format: probInputFormat,
-        output_format: probOutputFormat,
         constraints: probConstraints,
         starter_code: probStarterCode,
-        problem_type: probType,
-        function_name: probType === "function" ? probFunctionName : undefined,
-        return_type: probType === "function" ? probReturnType : undefined,
-        parameters: probType === "function" ? parsedParams : [],
+        function_name: probFunctionName,
+        return_type: probReturnType,
+        parameters: parsedParams,
       });
 
       showNotification(`Problem "${probTitle}" uploaded successfully!`, "success");
       setProbTitle("");
       setProbDescription("");
       setProbTags("");
-      setProbInputFormat("");
-      setProbOutputFormat("");
       setProbConstraints("");
       await fetchDropdownData();
     } catch (err: any) {
@@ -240,7 +230,7 @@ export default function AdminDashboard() {
           <h2>Problem Creation Suite</h2>
           <p>
             Create interview prep modules. Build tracks, add coding problems with templates, 
-            and specify public sample and private hidden testcase assertions.
+            and add example test cases students can run and submit against.
           </p>
         </section>
 
@@ -375,28 +365,6 @@ export default function AdminDashboard() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="prob-input-format">Input Format</label>
-                <textarea 
-                  id="prob-input-format" 
-                  value={probInputFormat}
-                  onChange={(e) => setProbInputFormat(e.target.value)}
-                  placeholder="Describe inputs (e.g. Size N, followed by elements...)"
-                  rows={2}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="prob-output-format">Output Format</label>
-                <textarea 
-                  id="prob-output-format" 
-                  value={probOutputFormat}
-                  onChange={(e) => setProbOutputFormat(e.target.value)}
-                  placeholder="Describe output expectations..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="form-group">
                 <label htmlFor="prob-constraints">Constraints</label>
                 <textarea 
                   id="prob-constraints" 
@@ -409,64 +377,48 @@ export default function AdminDashboard() {
 
               <div className="form-row-grid">
                 <div className="form-group">
-                  <label htmlFor="prob-type">Problem Style</label>
-                  <select
-                    id="prob-type"
-                    value={probType}
-                    onChange={(e) => setProbType(e.target.value as "stdio" | "function")}
-                  >
-                    <option value="function">Function (LeetCode-style)</option>
-                    <option value="stdio">Stdin/Stdout (competitive)</option>
-                  </select>
+                  <label htmlFor="prob-fn">Function Name</label>
+                  <input
+                    id="prob-fn"
+                    type="text"
+                    value={probFunctionName}
+                    onChange={(e) => setProbFunctionName(e.target.value)}
+                    placeholder="twoSum"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="prob-ret">Return Type</label>
+                  <input
+                    id="prob-ret"
+                    type="text"
+                    value={probReturnType}
+                    onChange={(e) => setProbReturnType(e.target.value)}
+                    placeholder="int*, int, bool, void"
+                    required
+                  />
                 </div>
               </div>
-
-              {probType === "function" && (
-                <>
-                  <div className="form-row-grid">
-                    <div className="form-group">
-                      <label htmlFor="prob-fn">Function Name</label>
-                      <input
-                        id="prob-fn"
-                        type="text"
-                        value={probFunctionName}
-                        onChange={(e) => setProbFunctionName(e.target.value)}
-                        placeholder="twoSum"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="prob-ret">Return Type</label>
-                      <input
-                        id="prob-ret"
-                        type="text"
-                        value={probReturnType}
-                        onChange={(e) => setProbReturnType(e.target.value)}
-                        placeholder="int*, int, bool, void"
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="prob-params">Parameters (name + type list)</label>
-                    <textarea
-                      id="prob-params"
-                      className="code-textarea-field"
-                      value={probParameters}
-                      onChange={(e) => setProbParameters(e.target.value)}
-                      rows={5}
-                    />
-                  </div>
-                </>
-              )}
+              <div className="form-group">
+                <label htmlFor="prob-params">Parameters</label>
+                <textarea
+                  id="prob-params"
+                  className="code-textarea-field"
+                  value={probParameters}
+                  onChange={(e) => setProbParameters(e.target.value)}
+                  rows={5}
+                  required
+                />
+              </div>
 
               <div className="form-group">
-                <label htmlFor="prob-starter">Starter Template Code (C) — leave empty to auto-generate for function problems</label>
+                <label htmlFor="prob-starter">Starter code (optional — auto-generated if empty)</label>
                 <textarea 
                   id="prob-starter" 
                   className="code-textarea-field"
                   value={probStarterCode}
                   onChange={(e) => setProbStarterCode(e.target.value)}
                   rows={8}
-                  placeholder={probType === "function" ? "Auto-generated from signature if empty" : "#include <stdio.h>..."}
                 />
               </div>
 
@@ -520,7 +472,7 @@ export default function AdminDashboard() {
                   id="tc-input" 
                   value={tcInput}
                   onChange={(e) => setTcInput(e.target.value)}
-                  placeholder="Function: nums = [2,7,11,15], target = 9  |  Stdio: raw stdin"
+                  placeholder="nums = [2,7,11,15], target = 9"
                   rows={4}
                 />
               </div>
@@ -531,7 +483,7 @@ export default function AdminDashboard() {
                   id="tc-output" 
                   value={tcExpectedOutput}
                   onChange={(e) => setTcExpectedOutput(e.target.value)}
-                  placeholder="Function: [0, 1]  |  Stdio: exact stdout"
+                  placeholder="[0, 1]"
                   rows={4}
                   required
                 />
@@ -544,7 +496,7 @@ export default function AdminDashboard() {
                   checked={tcIsHidden}
                   onChange={(e) => setTcIsHidden(e.target.checked)}
                 />
-                <label htmlFor="tc-hidden">Hidden Testcase (Do not show inputs/outputs to students)</label>
+                <label htmlFor="tc-hidden">Hidden test case (Submit only)</label>
               </div>
 
               <button type="submit" disabled={loading} className="submit-form-btn">

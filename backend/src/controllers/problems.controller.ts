@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { pool } from "../config/db";
 import {
   generateStarterCode,
-  isFunctionProblem,
   parseParameters,
+  sanitizeStarterCode,
 } from "../utils/codeWrapper";
 import {
   formatArgsDisplay,
@@ -102,7 +102,12 @@ export const getProblemById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Problem not found" });
     }
 
-    return res.json(result.rows[0]);
+    const row = result.rows[0];
+    row.starter_code = sanitizeStarterCode(row.starter_code || "");
+    row.input_format = "";
+    row.output_format = "";
+
+    return res.json(row);
   } catch (err: any) {
     console.error("Error fetching problem detail:", err);
     return res.status(500).json({ message: "Failed to fetch problem details" });
@@ -121,7 +126,6 @@ export const createProblem = async (req: Request, res: Response) => {
     output_format,
     constraints,
     starter_code,
-    problem_type,
     function_name,
     return_type,
     parameters,
@@ -132,17 +136,21 @@ export const createProblem = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Set ID, title, description, and difficulty are required" });
   }
 
-  const resolvedType = (problem_type || "stdio").toLowerCase();
+  const resolvedType = "function";
   const parsedParams = parseParameters(parameters);
   const meta: FunctionProblemMeta = {
-    problem_type: resolvedType,
+    problem_type: "function",
     function_name: function_name || "",
     return_type: return_type || "",
     parameters: parsedParams,
   };
 
+  if (!function_name || !return_type) {
+    return res.status(400).json({ message: "Function name and return type are required" });
+  }
+
   let resolvedStarter = starter_code || "";
-  if (isFunctionProblem(meta) && !resolvedStarter.trim()) {
+  if (!resolvedStarter.trim()) {
     resolvedStarter = generateStarterCode(meta);
   }
 

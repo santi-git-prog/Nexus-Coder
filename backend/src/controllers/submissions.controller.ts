@@ -25,7 +25,7 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
 
     const problemRow = problemRes.rows[0];
     const meta: FunctionProblemMeta = {
-      problem_type: problemRow.problem_type || "stdio",
+      problem_type: problemRow.problem_type || "function",
       function_name: problemRow.function_name || "",
       return_type: problemRow.return_type || "",
       parameters: parseParameters(problemRow.parameters),
