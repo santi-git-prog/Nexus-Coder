@@ -42,6 +42,9 @@ const cTypeForParam = (p: ProblemParameter): string[] => {
     case "bool":
     case "boolean":
       return [`bool ${p.name}`];
+    case "listnode*":
+    case "struct listnode*":
+      return [`struct ListNode* ${p.name}`];
     case "char":
       return [`char ${p.name}`];
     case "string":
@@ -65,7 +68,7 @@ export const buildFunctionSignature = (meta: FunctionProblemMeta): string => {
     parts.push(...cTypeForParam(p));
   }
   const ret = meta.return_type.trim();
-  if (ret.includes("*") && !parts.some((x) => x.includes("returnSize"))) {
+  if (ret.includes("*") && !ret.toLowerCase().includes("listnode") && !parts.some((x) => x.includes("returnSize"))) {
     parts.push("int* returnSize");
   }
   return parts.join(", ");
@@ -75,7 +78,7 @@ export const generateStarterCode = (meta: FunctionProblemMeta): string => {
   const signature = buildFunctionSignature(meta);
   const ret = meta.return_type.trim();
   let comment = "";
-  if (ret.includes("*")) {
+  if (ret.includes("*") && !ret.toLowerCase().includes("listnode")) {
     comment =
       "/**\n * Note: The returned array must be malloced, assume caller calls free().\n */\n";
   }
@@ -156,13 +159,27 @@ const buildCallArgs = (
     } else if (t === "string" || t === "char*") {
       lines.push(`char* ${p.name} = ${cLiteral(val ?? "", t)};`);
       args.push(p.name);
+    } else if (t === "listnode*" || t === "struct listnode*") {
+      const arr = Array.isArray(val) ? val : [];
+      lines.push(`struct ListNode* ${p.name} = NULL;`);
+      if (arr.length > 0) {
+        lines.push(`struct ListNode* ${p.name}_tail = NULL;`);
+        for (let i = 0; i < arr.length; i++) {
+          lines.push(`struct ListNode* ${p.name}_node${i} = (struct ListNode*)malloc(sizeof(struct ListNode));`);
+          lines.push(`${p.name}_node${i}->val = ${arr[i]};`);
+          lines.push(`${p.name}_node${i}->next = NULL;`);
+          lines.push(`if (!${p.name}) { ${p.name} = ${p.name}_node${i}; ${p.name}_tail = ${p.name}_node${i}; }`);
+          lines.push(`else { ${p.name}_tail->next = ${p.name}_node${i}; ${p.name}_tail = ${p.name}_node${i}; }`);
+        }
+      }
+      args.push(p.name);
     } else {
       lines.push(`${t === "bool" || t === "boolean" ? "bool" : t} ${p.name} = ${cLiteral(val ?? 0, t)};`);
       args.push(p.name);
     }
   }
   const ret = meta.return_type.trim();
-  if (ret.includes("*")) {
+  if (ret.includes("*") && !ret.toLowerCase().includes("listnode")) {
     lines.push("int returnSize = 0;");
     args.push("&returnSize");
   }
@@ -183,6 +200,22 @@ const printResultBlock = (meta: FunctionProblemMeta): string[] => {
     return ['if (result) printf("%s", result); else printf("null");'];
   }
   if (ret.includes("*")) {
+    if (ret.includes("listnode")) {
+      return [
+        'printf("[");',
+        'struct ListNode* curr = result;',
+        'bool first = true;',
+        'while (curr != NULL) {',
+        '  if (!first) printf(",");',
+        '  printf("%d", curr->val);',
+        '  first = false;',
+        '  struct ListNode* temp = curr;',
+        '  curr = curr->next;',
+        '  free(temp);',
+        '}',
+        'printf("]");',
+      ];
+    }
     return [
       'printf("[");',
       "for (int i = 0; i < returnSize; i++) {",

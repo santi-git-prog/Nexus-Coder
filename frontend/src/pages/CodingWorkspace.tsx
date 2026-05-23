@@ -464,6 +464,7 @@ export default function CodingWorkspace() {
                     onInputModeChange={setInputMode}
                     customExpected={customExpected}
                     onCustomExpectedChange={setCustomExpected}
+                    sampleTestcases={sampleTestcases}
                   />
                 </div>
 

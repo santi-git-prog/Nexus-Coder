@@ -8,6 +8,11 @@ export const STANDARD_C_HEADERS = [
   "#include <math.h>",
   "#include <limits.h>",
   "#include <stdint.h>",
+  "",
+  "struct ListNode {",
+  "    int val;",
+  "    struct ListNode *next;",
+  "};",
 ].join("\n");
 
 const INCLUDE_LINE = /^\s*#\s*include\s*[<"][^>\n"]+[>"]\s*$/gm;
