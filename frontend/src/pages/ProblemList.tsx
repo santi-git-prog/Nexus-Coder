@@ -85,7 +85,7 @@ export default function ProblemList() {
         </div>
         <nav className="list-nav">
           <Link to="/problems" className="nav-link">Tracks</Link>
-          <Link to="/workspace" className="nav-link">IDE Workspace</Link>
+          <Link to="/workspace" className="nav-link">Online Compiler</Link>
           <button onClick={handleLogout} className="list-logout-btn">
             Logout
           </button>

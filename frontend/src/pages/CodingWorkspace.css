@@ -847,3 +847,18 @@
   gap: 1.5rem;
   z-index: 100;
 }
+
+/* Playground / Online Compiler: no problem panel, editor takes full width */
+.playground-layout .workspace-content-pane {
+  flex-direction: row;
+}
+
+.playground-layout .editor-and-output-panel {
+  width: 100%;
+  flex: 1;
+}
+
+.playground-layout .dock-left {
+  width: 38%;
+  min-width: 280px;
+}

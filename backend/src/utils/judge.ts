@@ -382,3 +382,93 @@ export const runCustomCase = async (
     cleanupDir(runDir);
   }
 };
+
+/**
+ * Runs arbitrary user code (no problem wrapper) — used by the standalone Online Compiler.
+ * Accepts raw stdin as a string.
+ */
+export const runPlayground = async (
+  userCode: string,
+  stdinData: string,
+  timeoutMs = 5000
+): Promise<{
+  stdout: string;
+  stderr: string;
+  compile_error: string;
+  status: string;
+}> => {
+  const sandboxMode = getSandboxMode();
+  if (sandboxMode === "none") {
+    return {
+      stdout: "",
+      stderr: "No C compiler available. Install GCC (MinGW) or Docker with the gcc image.",
+      compile_error: "No C compiler available.",
+      status: "Compile Error",
+    };
+  }
+
+  const runId = `playground_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const runDir = path.join(TEMP_RUNS_DIR, runId);
+  fs.mkdirSync(runDir, { recursive: true });
+
+  try {
+    // Write raw source, no wrapping
+    const sourceFile = path.join(runDir, "solution.c");
+    fs.writeFileSync(sourceFile, userCode, "utf8");
+
+    // Compile
+    const compile = await compileSource(runDir, userCode, sandboxMode);
+    if (!compile.ok) {
+      return {
+        stdout: "",
+        stderr: compile.stderr,
+        compile_error: compile.stderr,
+        status: "Compile Error",
+      };
+    }
+
+    // Run with optional stdin piped in
+    const execFile = path.join(runDir, EXECUTABLE_NAME);
+    const runResult = await new Promise<RunOnceResult>((resolve) => {
+      const proc = spawn(execFile);
+      let stdoutData = "";
+      let stderrData = "";
+      let isTimedOut = false;
+
+      const timeout = setTimeout(() => {
+        isTimedOut = true;
+        try { proc.kill("SIGKILL"); } catch { /* ignore */ }
+      }, timeoutMs);
+
+      proc.stdout.on("data", (d) => { stdoutData += d.toString(); });
+      proc.stderr.on("data", (d) => { stderrData += d.toString(); });
+
+      proc.on("close", (code) => {
+        clearTimeout(timeout);
+        resolve({ exitCode: code ?? 0, stdout: stdoutData, stderr: stderrData, isTimedOut });
+      });
+
+      if (stdinData) {
+        proc.stdin.write(stdinData);
+      }
+      proc.stdin.end();
+    });
+
+    if (runResult.isTimedOut) {
+      return { stdout: "", stderr: "Time Limit Exceeded", compile_error: "", status: "Time Limit Exceeded" };
+    }
+    if (runResult.exitCode !== 0) {
+      return { stdout: "", stderr: runResult.stderr || "Runtime Error", compile_error: "", status: "Runtime Error" };
+    }
+
+    return {
+      stdout: runResult.stdout,
+      stderr: runResult.stderr,
+      compile_error: "",
+      status: "Success",
+    };
+  } finally {
+    cleanupDir(runDir);
+  }
+};
+

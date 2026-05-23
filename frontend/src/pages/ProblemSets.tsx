@@ -65,7 +65,7 @@ export default function ProblemSets() {
           <h1>NexusCoder IDE</h1>
         </div>
         <nav className="sets-nav">
-          <Link to="/workspace" className="nav-link">IDE Workspace</Link>
+          <Link to="/workspace" className="nav-link">Online Compiler</Link>
           {profile?.role === "admin" && (
             <Link to="/admin" className="admin-pill">Admin Dashboard</Link>
           )}

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { pool } from "../config/db";
 import { FunctionProblemMeta } from "../types/problem";
 import { parseParameters } from "../utils/codeWrapper";
-import { judgeSolution, runCustomCase } from "../utils/judge";
+import { judgeSolution, runCustomCase, runPlayground } from "../utils/judge";
 
 const loadProblem = async (problemId: string) => {
   const result = await pool.query("SELECT * FROM problems WHERE id = $1", [problemId]);
@@ -71,6 +71,30 @@ export const runProblemCode = async (req: Request, res: Response) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Run problem error:", err);
+    return res.status(500).json({ message: "Execution engine crash: " + message });
+  }
+};
+
+/**
+ * POST /api/run-playground
+ * Compiles and runs arbitrary user code with optional raw stdin. No problem context needed.
+ */
+export const runPlaygroundCode = async (req: Request, res: Response) => {
+  const { code, language, stdin = "" } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ message: "Code cannot be empty" });
+  }
+  if (!language || language.toLowerCase() !== "c") {
+    return res.status(400).json({ message: "Currently only C language is supported" });
+  }
+
+  try {
+    const result = await runPlayground(code, stdin);
+    return res.json(result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Playground run error:", err);
     return res.status(500).json({ message: "Execution engine crash: " + message });
   }
 };

@@ -75,12 +75,22 @@ export default function CodingWorkspace() {
   // Authentication role check
   const [userRole, setUserRole] = useState<string>("user");
 
+  // Detect playground mode (no problem)
+  const isPlayground = !problemId;
+
+  const DEFAULT_PLAYGROUND_CODE = `#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}`;
+
   // Core Editor states
   const [language, setLanguage] = useState<string>("c");
-  const [code, setCode] = useState<string>("");
+  const [code, setCode] = useState<string>(isPlayground ? DEFAULT_PLAYGROUND_CODE : "");
   const [input, setInput] = useState<string>("");
   const [customExpected, setCustomExpected] = useState<string>("");
-  const [inputMode, setInputMode] = useState<"sample" | "custom">("sample");
+  const [inputMode, setInputMode] = useState<"sample" | "custom">(isPlayground ? "custom" : "sample");
   const [runPanelMode, setRunPanelMode] = useState<"console" | "testcases">("console");
 
   // Problem loaded states
@@ -109,12 +119,7 @@ export default function CodingWorkspace() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!problemId) {
-      navigate("/problems", { replace: true });
-      return;
-    }
-  }, [problemId, navigate]);
+  // No redirect for playground mode — it's a valid route
 
   useEffect(() => {
     const fetchProblemData = async () => {
@@ -150,7 +155,7 @@ export default function CodingWorkspace() {
   }, [problemId]);
 
   const handleRun = async () => {
-    if (!code.trim() || !problemId) return;
+    if (!code.trim()) return;
 
     setRunStatus("Running");
     setStdout("");
@@ -160,15 +165,24 @@ export default function CodingWorkspace() {
     let clearRunningOnly = false;
 
     try {
-      if (inputMode === "custom") {
-        if (!input.trim()) {
-          setShowSubmitPanel(false);
-          setRunPanelMode("console");
-          setRunStatus("Runtime Error");
-          setStderr("Enter arguments in Custom Input (e.g. nums = [2,7], target = 9).");
-          return;
-        }
+      // ── Playground mode: just compile & run raw code with stdin ──
+      if (isPlayground) {
+        setShowSubmitPanel(false);
+        setRunPanelMode("console");
+        const response = await api.post("/run-playground", {
+          code,
+          language,
+          stdin: input,
+        });
+        const data = response.data;
+        setStdout(data.stdout || "");
+        setStderr(data.stderr || "");
+        setCompileError(data.compile_error || "");
+        setRunStatus(data.status || "Success");
+        return;
+      }
 
+      if (inputMode === "custom") {
         setShowSubmitPanel(false);
         setRunPanelMode("console");
         const response = await api.post(`/problems/${problemId}/run`, {
@@ -310,13 +324,14 @@ export default function CodingWorkspace() {
   };
 
   return (
-    <div className="workspace-wrapper split-layout">
+    <div className={`workspace-wrapper ${isPlayground ? "playground-layout" : "split-layout"}`}>
       {/* Sleek Top Navbar */}
       <header className="workspace-header">
         <div className="workspace-logo-area">
           <span className="logo-icon">⚡</span>
           <h1>NexusCoder IDE</h1>
           {problem && <span className="current-problem-indicator">/ {problem.title}</span>}
+          {isPlayground && <span className="current-problem-indicator">/ Online Compiler</span>}
         </div>
         <div className="workspace-header-actions">
           <Link to="/problems" className="nav-link">Tracks</Link>
@@ -331,13 +346,15 @@ export default function CodingWorkspace() {
 
       {/* Split main layout */}
       <div className="workspace-content-pane">
-        {loadingProblem || !problem ? (
+        {!isPlayground && (loadingProblem || !problem) ? (
           <div className="problem-loading-overlay">
             <span className="spinner"></span>
             <p>Loading problem...</p>
           </div>
         ) : (
           <>
+            {/* Problem description panel — hidden in playground mode */}
+            {!isPlayground && problem && (
             <aside className="problem-description-panel">
                 <div className="problem-panel-header">
                   <h2>{problem.title}</h2>
@@ -390,6 +407,7 @@ export default function CodingWorkspace() {
                   )}
                 </div>
               </aside>
+            )}
 
             {/* Code editor & results */}
             <main className="editor-and-output-panel">
@@ -423,7 +441,7 @@ export default function CodingWorkspace() {
                       )}
                     </button>
 
-                    {problem && (
+                    {problem && !isPlayground && (
                       <button
                         onClick={handleSubmit}
                         disabled={runStatus === "Running" || submitting}
@@ -461,7 +479,7 @@ export default function CodingWorkspace() {
                     value={input}
                     onChange={setInput}
                     inputMode={inputMode}
-                    onInputModeChange={setInputMode}
+                    onInputModeChange={isPlayground ? undefined : setInputMode}
                     customExpected={customExpected}
                     onCustomExpectedChange={setCustomExpected}
                     sampleTestcases={sampleTestcases}

@@ -25,20 +25,26 @@ export default function InputPanel({
     <div className="input-panel">
       <div className="panel-header input-panel-header">
         <div className="input-mode-tabs">
-          <button
-            type="button"
-            className={`input-mode-tab ${inputMode === "sample" ? "active" : ""}`}
-            onClick={() => onInputModeChange?.("sample")}
-          >
-            Testcase
-          </button>
-          <button
-            type="button"
-            className={`input-mode-tab ${inputMode === "custom" ? "active" : ""}`}
-            onClick={() => onInputModeChange?.("custom")}
-          >
-            Custom Input
-          </button>
+          {onInputModeChange ? (
+            <>
+              <button
+                type="button"
+                className={`input-mode-tab ${inputMode === "sample" ? "active" : ""}`}
+                onClick={() => onInputModeChange("sample")}
+              >
+                Testcase
+              </button>
+              <button
+                type="button"
+                className={`input-mode-tab ${inputMode === "custom" ? "active" : ""}`}
+                onClick={() => onInputModeChange("custom")}
+              >
+                Custom Input
+              </button>
+            </>
+          ) : (
+            <span className="input-mode-tab active">Stdin</span>
+          )}
         </div>
       </div>
 
