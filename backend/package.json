@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev src/index.ts",
-    "seed:reset": "ts-node-dev --transpile-only -P tsconfig.scripts.json scripts/seed-reset.ts",
-    "seed:amazon": "ts-node-dev --transpile-only -P tsconfig.scripts.json scripts/seed-amazon.ts"
+    "dev": "ts-node-dev src/index.ts"
   },
   "keywords": [],
   "author": "",
