@@ -1,38 +1,36 @@
-/* Glassmorphism Dark theme variables */
+/* ─── CodingWorkspace Design Tokens ─── */
 :root {
-  --bg-deep: #0a0514;
-  --bg-panel: rgba(22, 12, 38, 0.6);
-  --border-glass: rgba(147, 51, 234, 0.2);
-  --border-hover: rgba(168, 85, 247, 0.4);
-  --text-main: #f3e8ff;
-  --text-muted: #c084fc;
-  --primary-glow: rgba(139, 92, 246, 0.15);
+  --bg-deep: var(--bg-main);
+  --bg-panel: var(--bg-card);
+  --border-glass: var(--border-color);
+  --border-hover: rgba(6, 182, 212, 0.3);
+  --text-main: var(--text-primary);
+  --text-muted: var(--text-secondary);
   --easy-color: #10b981;
   --medium-color: #f59e0b;
   --hard-color: #ef4444;
 }
 
-/* Master Layout Pane */
+/* ─── Master Layout ─── */
 .workspace-wrapper {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-deep);
-  color: var(--text-main);
+  background: var(--bg-deep, #050510);
+  color: var(--text-main, #f8fafc);
   font-family: 'Inter', sans-serif;
   overflow: hidden;
 }
 
-/* Navbar */
+/* ─── Glassmorphism Navbar ─── */
 .workspace-header {
-  height: 55px;
+  height: 52px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 1.5rem;
-  background: rgba(10, 5, 20, 0.85);
-  border-bottom: 1px solid var(--border-glass);
-  backdrop-filter: blur(12px);
+  background: #070a18;
+  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
   z-index: 10;
 }
 
@@ -43,65 +41,66 @@
 }
 
 .logo-icon {
-  font-size: 1.4rem;
-  filter: drop-shadow(0 0 6px #a855f7);
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 8px var(--primary));
 }
 
 .workspace-logo-area h1 {
-  font-size: 1.15rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #f3e8ff 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #f0f2f5 0%, var(--primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .current-problem-indicator {
-  color: #c084fc;
-  font-size: 0.95rem;
+  color: var(--primary-hover);
+  font-size: 0.9rem;
   font-weight: 600;
   margin-left: 0.5rem;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 .workspace-header-actions {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1rem;
 }
 
 .logout-button {
   background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.15);
   color: #f87171;
-  padding: 0.4rem 1rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .logout-button:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-/* Split Pane Grid */
+/* ─── Split Pane ─── */
 .workspace-content-pane {
-  flex-direction: row; /* ensure side-by-side layout */
+  flex-direction: row;
   flex: 1;
   display: flex;
   overflow: hidden;
   position: relative;
 }
 
-/* LEFT SIDEBAR: Problem Details */
+/* ─── LEFT: Problem Panel ─── */
 .problem-description-panel {
   width: 42%;
   min-width: 350px;
-  border-right: 1px solid var(--border-glass);
-  background: rgba(15, 8, 28, 0.55);
+  border-right: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
+  background: #0f1328;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -109,11 +108,11 @@
 
 .problem-panel-header {
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
 }
 
 .problem-panel-header h2 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   margin-bottom: 0.8rem;
   color: #ffffff;
@@ -127,7 +126,7 @@
 }
 
 .diff-tag-workspace {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -135,23 +134,9 @@
   letter-spacing: 0.5px;
 }
 
-.diff-tag-workspace.easy {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
-}
-
-.diff-tag-workspace.medium {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
-}
-
-.diff-tag-workspace.hard {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
-}
+.diff-tag-workspace.easy   { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; }
+.diff-tag-workspace.medium { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.diff-tag-workspace.hard   { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; }
 
 .problem-tags-row {
   display: flex;
@@ -159,11 +144,11 @@
 }
 
 .tag-pill {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: #c084fc;
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.15);
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.12);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
 }
@@ -178,16 +163,16 @@
 }
 
 .problem-panel-body::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .problem-panel-body::-webkit-scrollbar-thumb {
-  background: rgba(147, 51, 234, 0.25);
+  background: rgba(139, 92, 246, 0.2);
   border-radius: 3px;
 }
 
 .description-section h4 {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #c084fc;
   margin-bottom: 0.6rem;
@@ -196,28 +181,28 @@
 }
 
 .markdown-desc {
-  font-size: 0.98rem;
-  line-height: 1.6;
-  color: #e9d5ff;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #d9e2f2;
 }
 
 .format-text {
-  font-size: 0.93rem;
-  line-height: 1.5;
-  color: #d8b4fe;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #d4b8f0;
 }
 
 .constraints-block {
-  background: rgba(10, 5, 20, 0.4);
-  border: 1px solid rgba(147, 51, 234, 0.1);
+  background: var(--bg-inset, #080b18);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
   padding: 0.8rem 1rem;
-  border-radius: 8px;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.88rem;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
   color: #c084fc;
 }
 
-/* Sample testcase card designs */
+/* ─── Sample Testcases ─── */
 .samples-container {
   display: flex;
   flex-direction: column;
@@ -226,22 +211,22 @@
 }
 
 .sample-card {
-  background: rgba(10, 5, 20, 0.5);
-  border: 1px solid var(--border-glass);
-  border-radius: 8px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .sample-card-header {
-  background: rgba(147, 51, 234, 0.08);
+  background: rgba(139, 92, 246, 0.05);
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-glass);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .sample-card-header h5 {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #e9d5ff;
+  color: #e2d4f5;
 }
 
 .sample-card-body {
@@ -252,35 +237,35 @@
 }
 
 .sample-io h6 {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #c084fc;
   margin-bottom: 0.3rem;
 }
 
 .sample-io pre,
 .leetcode-io {
-  background: rgba(0, 0, 0, 0.25);
+  background: #070a16;
   padding: 0.5rem 0.8rem;
-  border-radius: 6px;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.85rem;
-  color: #e9d5ff;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.83rem;
+  color: #e2d4f5;
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
   line-height: 1.55;
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* RIGHT SIDEBAR: Monaco Editor & Output Dock */
+/* ─── RIGHT: Editor + Output ─── */
 .editor-and-output-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #0d071b;
+  background: #070a16;
 }
 
-/* In standalone playground, the left bar is gone and it uses full width */
 .standalone-layout .editor-and-output-panel {
   width: 100%;
 }
@@ -290,33 +275,33 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-bottom: 1px solid var(--border-glass);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Editor Toolbar */
+/* ─── Editor Toolbar ─── */
 .editor-toolbar {
-  height: 48px;
+  height: 46px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 1rem;
-  background: rgba(10, 5, 20, 0.6);
-  border-bottom: 1px solid rgba(147, 51, 234, 0.15);
+  background: #0b1022;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.08);
 }
 
 .toolbar-left, .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.7rem;
 }
 
 .reset-code-btn {
   background: transparent;
-  border: 1px solid var(--border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  padding: 0.35rem 0.8rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -324,66 +309,66 @@
 
 .reset-code-btn:hover {
   color: var(--text-main);
-  border-color: var(--border-hover);
-  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.04);
 }
 
 .run-button {
-  background: rgba(168, 85, 247, 0.12);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  color: #e9d5ff;
-  font-size: 0.85rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: #e2d4f5;
+  font-size: 0.82rem;
   font-weight: 600;
-  padding: 0.4rem 1.2rem;
-  border-radius: 6px;
+  padding: 0.35rem 1.1rem;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.05);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.04);
 }
 
 .run-button:hover:not(:disabled) {
-  background: rgba(168, 85, 247, 0.22);
-  border-color: rgba(168, 85, 247, 0.5);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 18px rgba(139, 92, 246, 0.12);
 }
 
 .submit-button-workspace {
-  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   border: none;
-  color: #ffffff;
-  font-size: 0.85rem;
+  color: #060913;
+  font-size: 0.82rem;
   font-weight: 700;
-  padding: 0.42rem 1.4rem;
-  border-radius: 6px;
+  padding: 0.38rem 1.3rem;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 12px rgba(236, 72, 153, 0.2);
+  box-shadow: 0 3px 15px rgba(6, 182, 212, 0.15);
 }
 
 .submit-button-workspace:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 5px 18px rgba(236, 72, 153, 0.35);
+  box-shadow: 0 6px 22px rgba(6, 182, 212, 0.3);
 }
 
 .run-button:disabled, .submit-button-workspace:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Spinner Icon */
+/* ─── Spinner ─── */
 .spinner-icon {
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-left-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -400,18 +385,18 @@
   height: 100%;
 }
 
-/* Test input + results dock */
+/* ─── Terminal Dock ─── */
 .terminal-dock {
   flex: 45;
   display: flex;
   overflow: hidden;
-  background: #090412;
+  background: #070a16;
 }
 
 .dock-left {
   width: 32%;
   min-width: 260px;
-  border-right: 1px solid var(--border-glass);
+  border-right: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
   display: flex;
   flex-direction: column;
 }
@@ -424,18 +409,18 @@
 
 .input-mode-tabs {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.3rem;
   width: 100%;
 }
 
 .input-mode-tab {
   flex: 1;
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   font-weight: 600;
-  padding: 0.4rem 0.5rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 6px;
-  border: 1px solid var(--border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   background: transparent;
   color: #c084fc;
   cursor: pointer;
@@ -443,14 +428,14 @@
 }
 
 .input-mode-tab.active {
-  background: rgba(139, 92, 246, 0.15);
-  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
   color: #f3e8ff;
 }
 
 .input-hint-box {
   padding: 0.75rem 1rem;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.5;
   color: #a78bfa;
 }
@@ -459,8 +444,40 @@
   margin: 0 0 0.5rem;
 }
 
+.sample-input-body {
+  padding: 0.85rem 1rem 1rem;
+  gap: 0.85rem;
+}
+
+.sample-case-tabs {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sample-case-card {
+  background: var(--bg-inset, #080b18);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.sample-case-card .example-line + .example-line {
+  margin-top: 0.6rem;
+}
+
+.sample-case-card code {
+  display: inline-block;
+  max-width: 100%;
+  background: #070a16;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 4px;
+  padding: 0.12rem 0.4rem;
+  overflow-wrap: anywhere;
+}
+
 .custom-expected-block {
-  border-top: 1px solid var(--border-glass);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   padding-top: 0.5rem;
 }
 
@@ -468,9 +485,9 @@
   min-height: 60px;
 }
 
-/* LeetCode-style examples */
+/* ─── LeetCode Examples ─── */
 .examples-section h4 {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #f3e8ff;
   margin-bottom: 0.75rem;
@@ -479,28 +496,28 @@
 .examples-list {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.2rem;
 }
 
 .leetcode-example {
-  padding: 0.85rem 1rem;
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 8px;
-  border-left: 3px solid rgba(168, 85, 247, 0.55);
+  padding: 0.8rem 1rem;
+  background: var(--bg-inset, #080b18);
+  border-radius: 10px;
+  border-left: 3px solid rgba(139, 92, 246, 0.4);
 }
 
 .example-heading {
   font-weight: 600;
-  color: #e9d5ff;
+  color: #e2d4f5;
   margin: 0 0 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .example-line {
   margin: 0.35rem 0;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   line-height: 1.6;
-  color: #d8b4fe;
+  color: #d4b8f0;
 }
 
 .example-line strong {
@@ -509,8 +526,8 @@
 }
 
 .example-line code {
-  font-family: "Fira Code", "Consolas", monospace;
-  font-size: 0.85rem;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.82rem;
   color: #f3e8ff;
   background: transparent;
   padding: 0;
@@ -526,7 +543,7 @@
 }
 
 .hidden-case-title {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: #a78bfa;
   margin: 0 0 1rem;
@@ -541,7 +558,7 @@
   min-height: 0;
 }
 
-/* Input / output panels — full height in dock */
+/* ─── Input / Output Panels ─── */
 .input-panel,
 .output-panel {
   display: flex;
@@ -549,7 +566,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: rgba(12, 6, 23, 0.95);
+  background: #070a16;
 }
 
 .input-panel-body {
@@ -566,19 +583,19 @@
   resize: none;
   width: 100%;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-glass);
+  background: var(--bg-inset, #080b18);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
   border-radius: 0;
-  color: #e9d5ff;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.85rem;
+  color: #e2d4f5;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.83rem;
   padding: 0.75rem 1rem;
   line-height: 1.5;
 }
 
 .input-panel .custom-textarea:focus {
   outline: none;
-  border-color: rgba(168, 85, 247, 0.45);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .input-hint-box {
@@ -587,22 +604,22 @@
 }
 
 .inline-example {
-  font-family: 'Fira Code', monospace;
-  font-size: 0.8rem;
-  color: #e9d5ff;
-  background: rgba(0, 0, 0, 0.3);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.78rem;
+  color: #e2d4f5;
+  background: var(--bg-inset);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
 
 .panel-header {
   flex-shrink: 0;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-glass);
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .panel-label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #c084fc;
   text-transform: uppercase;
@@ -615,18 +632,79 @@
   align-items: center;
 }
 
+.output-header-left,
+.language-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.language-dropdown {
+  min-width: 150px;
+  background: var(--bg-inset, #080b18);
+  color: var(--text-primary, #f8fafc);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
+  border-radius: 6px;
+  padding: 0.32rem 0.55rem;
+  font: inherit;
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.language-dropdown:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.status-badge.idle {
+  color: var(--text-muted);
+  background: var(--bg-inset);
+}
+
+.status-badge.success {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.status-badge.compile-error,
+.status-badge.runtime-error {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.status-badge.timeout,
+.status-badge.running {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
 .clear-btn {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
   background: transparent;
-  border: 1px solid var(--border-glass);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: #a78bfa;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .clear-btn:hover {
-  border-color: rgba(168, 85, 247, 0.5);
+  border-color: rgba(139, 92, 246, 0.35);
   color: #f3e8ff;
 }
 
@@ -636,6 +714,27 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.terminal-content,
+.terminal-empty-text {
+  margin: 0;
+  padding: 1rem;
+  color: var(--text-secondary, #b6c0d4);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.stdout-text {
+  color: #dbeafe;
+}
+
+.stderr-text,
+.compile-error-text {
+  color: #fca5a5;
 }
 
 .terminal-display-scroll {
@@ -654,16 +753,16 @@
 
 .terminal-loading-text {
   color: #a78bfa;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: center;
 }
 
 .terminal-display .spinner,
 .problem-loading-overlay .spinner,
 .terminal-running-state .spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(168, 85, 247, 0.2);
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(139, 92, 246, 0.15);
   border-left-color: #a855f7;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -673,9 +772,9 @@
   to { transform: rotate(360deg); }
 }
 
-/* LeetCode Submissions Results view inside Terminal */
+/* ─── Submission Results ─── */
 .submit-results-view {
-  padding: 1rem 1.25rem 1.5rem;
+  padding: 1rem 1.2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -684,11 +783,11 @@
 }
 
 .submit-results-view::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .submit-results-view::-webkit-scrollbar-thumb {
-  background: rgba(147, 51, 234, 0.2);
+  background: rgba(139, 92, 246, 0.15);
   border-radius: 3px;
 }
 
@@ -699,76 +798,69 @@
 }
 
 .submit-status {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.5px;
   padding: 0.4rem 1.2rem;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-.submit-status.accepted { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-.submit-status.wrong-answer { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-.submit-status.compile-error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-.submit-status.runtime-error { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; }
-.submit-status.timeout { background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); color: #fb923c; }
+.submit-status.accepted       { background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; }
+.submit-status.wrong-answer   { background: rgba(239, 68, 68, 0.08);  border: 1px solid rgba(239, 68, 68, 0.2);  color: #f87171; }
+.submit-status.compile-error  { background: rgba(239, 68, 68, 0.08);  border: 1px solid rgba(239, 68, 68, 0.2);  color: #f87171; }
+.submit-status.runtime-error  { background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.submit-status.timeout        { background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); color: #fb923c; }
 
 .submission-stats {
-  font-size: 0.95rem;
-  color: #d8b4fe;
+  font-size: 0.92rem;
+  color: #d4b8f0;
 }
 
 .submission-stats strong {
   color: #f3e8ff;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
 }
 
-/* Horizontal pill list of testcases */
+/* ─── Testcase Pills ─── */
 .testcase-outcome-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+  gap: 0.45rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.06);
   padding-bottom: 0.8rem;
 }
 
 .tc-pill-btn {
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.35rem 0.8rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
 }
 
-.tc-pill-btn.passed {
-  background: rgba(16, 185, 129, 0.06);
-  color: #34d399;
-}
-
-.tc-pill-btn.failed {
-  background: rgba(239, 68, 68, 0.06);
-  color: #f87171;
-}
+.tc-pill-btn.passed { background: rgba(16, 185, 129, 0.04); color: #34d399; }
+.tc-pill-btn.failed { background: rgba(239, 68, 68, 0.04);  color: #f87171; }
 
 .tc-pill-btn.active.passed {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.1);
 }
 
 .tc-pill-btn.active.failed {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.1);
 }
 
-/* Detailed result outcome card */
+/* ─── Detail Card ─── */
 .testcase-details-card {
-  background: rgba(10, 5, 20, 0.6);
-  border: 1px solid var(--border-glass);
-  border-radius: 10px;
+  background: var(--bg-inset, #080b18);
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.16));
+  border-radius: 12px;
   padding: 1.2rem;
   flex-shrink: 0;
 }
@@ -779,7 +871,7 @@
 }
 
 .public-testcase-card h5, .hidden-testcase-card h5 {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #c084fc;
   margin-bottom: 1rem;
@@ -792,47 +884,46 @@
 }
 
 .detail-io-block h6 {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #a78bfa;
   margin-bottom: 0.3rem;
 }
 
 .detail-io-block pre {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(147, 51, 234, 0.05);
+  background: #070a16;
+  border: 1px solid rgba(148, 163, 184, 0.14);
   padding: 0.6rem 0.9rem;
-  border-radius: 6px;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.85rem;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.83rem;
 }
 
-.stdout-green { color: #34d399; }
-.stdout-red { color: #f87171; }
+.stdout-green  { color: #34d399; }
+.stdout-red    { color: #f87171; }
 .stderr-text-box { color: #fbbf24; }
-
 
 .status-pill {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   padding: 0.3rem 1rem;
   border-radius: 20px;
 }
 
-.status-pill.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-.status-pill.danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+.status-pill.success { background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; }
+.status-pill.danger  { background: rgba(239, 68, 68, 0.06);  border: 1px solid rgba(239, 68, 68, 0.2);  color: #f87171; }
 
 .submit-error-log pre {
-  background: #0c0617;
+  background: rgba(6, 4, 14, 0.6);
   padding: 1rem;
-  border-radius: 8px;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.85rem;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.83rem;
   color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.12);
 }
 
-/* Loading & Overlay states */
+/* ─── Loading Overlay ─── */
 .problem-loading-overlay {
   position: absolute;
   top: 0;
@@ -848,7 +939,7 @@
   z-index: 100;
 }
 
-/* Playground / Online Compiler: no problem panel, editor takes full width */
+/* ─── Playground / Online Compiler ─── */
 .playground-layout .workspace-content-pane {
   flex-direction: row;
 }

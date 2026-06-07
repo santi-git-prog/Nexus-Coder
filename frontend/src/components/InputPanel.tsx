@@ -49,32 +49,31 @@ export default function InputPanel({
       </div>
 
       {inputMode === "sample" ? (
-        <div className="input-panel-body" style={{ padding: '0 15px 15px' }}>
+        <div className="input-panel-body sample-input-body">
           {sampleTestcases && sampleTestcases.length > 0 ? (
             <>
-              <div className="testcase-outcome-bar" style={{ marginBottom: '10px' }}>
+              <div className="testcase-outcome-bar sample-case-tabs">
                 {sampleTestcases.map((tc, idx) => (
                   <button
                     key={tc.id || idx}
                     type="button"
                     className={`tc-pill-btn ${activeTab === idx ? "active" : ""}`}
                     onClick={() => setActiveTab(idx)}
-                    style={{ marginRight: '8px', cursor: 'pointer', padding: '4px 12px', borderRadius: '15px', background: activeTab === idx ? '#444' : '#222', color: '#fff', border: '1px solid #555' }}
                   >
                     Case {idx + 1}
                   </button>
                 ))}
               </div>
-              <div className="public-testcase-card" style={{ background: '#1e1e1e', padding: '10px', borderRadius: '8px' }}>
-                <p className="example-line" style={{ marginBottom: '8px', color: '#ccc' }}>
+              <div className="public-testcase-card sample-case-card">
+                <p className="example-line">
                   <strong>Input:</strong>{" "}
-                  <code style={{ background: '#2d2d2d', padding: '2px 6px', borderRadius: '4px' }}>
+                  <code>
                     {sampleTestcases[activeTab]?.input_display || sampleTestcases[activeTab]?.input}
                   </code>
                 </p>
-                <p className="example-line" style={{ color: '#ccc' }}>
+                <p className="example-line">
                   <strong>Output:</strong>{" "}
-                  <code style={{ background: '#2d2d2d', padding: '2px 6px', borderRadius: '4px' }}>
+                  <code>
                     {sampleTestcases[activeTab]?.expected_output_display || sampleTestcases[activeTab]?.expected_output}
                   </code>
                 </p>
