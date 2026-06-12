@@ -12,6 +12,7 @@ import {
   stripEditorIncludes,
 } from "../utils/leetcodeDisplay";
 import "./CodingWorkspace.css";
+import { renderMarkdown } from "../utils/markdown";
 
 type ProblemParameter = {
   name: string;
@@ -112,12 +113,94 @@ int main() {
   // Selected testcase result card for expanded view
   const [activeTcResultId, setActiveTcResultId] = useState<string>("");
 
+  // AI assistant states
+  const [isAiOpen, setIsAiOpen] = useState<boolean>(false);
+  const [aiTab, setAiTab] = useState<"overview" | "hints">("overview");
+  const [reviewContent, setReviewContent] = useState<string>("");
+  const [loadingReview, setLoadingReview] = useState<boolean>(false);
+  
+  const [hintHistory, setHintHistory] = useState<Array<{ prompt: string; response: string }>>([]);
+  const [remainingHints, setRemainingHints] = useState<number>(5);
+  const [promptInput, setPromptInput] = useState<string>("");
+  const [loadingHint, setLoadingHint] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string>("");
+
   useEffect(() => {
     // Check if user is an admin
     api.get("/users/me")
       .then((res) => setUserRole(res.data.role))
       .catch(() => {});
   }, []);
+
+  // Fetch AI hints history and remaining hint count when problem changes
+  useEffect(() => {
+    const fetchAiHistory = async () => {
+      if (!problemId || isPlayground) {
+        setHintHistory([]);
+        setRemainingHints(5);
+        return;
+      }
+      try {
+        const res = await api.get(`/problems/${problemId}/ai-hints`);
+        setHintHistory(res.data.history || []);
+        setRemainingHints(res.data.remainingHints ?? 5);
+      } catch (err) {
+        console.error("Failed to fetch AI hints history:", err);
+      }
+    };
+    fetchAiHistory();
+  }, [problemId, isPlayground]);
+
+  const handleGetAiOverview = async () => {
+    if (!code.trim()) return;
+    setLoadingReview(true);
+    setAiError("");
+    try {
+      const endpoint = isPlayground ? "/playground/ai-overview" : `/problems/${problemId}/ai-overview`;
+      const response = await api.post(endpoint, {
+        code,
+        language,
+      });
+      setReviewContent(response.data.review);
+    } catch (err: any) {
+      console.error(err);
+      setAiError(err.response?.data?.message || "Failed to load AI review. Please make sure GROQ_API_KEY is configured in the backend .env file.");
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const handleSendAiPrompt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promptInput.trim() || loadingHint || remainingHints <= 0) return;
+    
+    const userPrompt = promptInput;
+    setPromptInput("");
+    setLoadingHint(true);
+    setAiError("");
+
+    // Optimistically add to history with a thinking loader
+    const tempHistory = [...hintHistory, { prompt: userPrompt, response: "Thinking..." }];
+    setHintHistory(tempHistory);
+
+    try {
+      const response = await api.post(`/problems/${problemId}/ai-hint`, {
+        prompt: userPrompt,
+      });
+      setHintHistory([
+        ...hintHistory,
+        { prompt: userPrompt, response: response.data.response }
+      ]);
+      setRemainingHints(response.data.remainingHints);
+    } catch (err: any) {
+      console.error(err);
+      // Revert optimism on error
+      setHintHistory(hintHistory);
+      setAiError(err.response?.data?.message || "Failed to get AI hint. Please try again.");
+    } finally {
+      setLoadingHint(false);
+    }
+  };
 
   // No redirect for playground mode — it's a valid route
 
@@ -424,6 +507,19 @@ int main() {
                   </div>
                   <div className="toolbar-right">
                     <button
+                      onClick={() => setIsAiOpen(!isAiOpen)}
+                      className={`ai-assistant-toggle-btn ${isAiOpen ? "active" : ""}`}
+                    >
+                      <span className="ai-icon">✨</span>
+                      Ask Nexai
+                      {!isPlayground && (
+                        <span className="ai-badge">
+                          {remainingHints}/5 left
+                        </span>
+                      )}
+                    </button>
+
+                    <button
                       onClick={handleRun}
                       disabled={runStatus === "Running" || submitting}
                       className="run-button"
@@ -605,6 +701,133 @@ int main() {
                 </div>
               </section>
             </main>
+
+            {/* Sliding AI Sidebar */}
+            <aside className={`ai-sidebar ${isAiOpen ? "open" : ""}`}>
+              <div className="ai-sidebar-header">
+                <h3>✨ Nexai</h3>
+                <button className="ai-sidebar-close" onClick={() => setIsAiOpen(false)}>✕</button>
+              </div>
+              
+              <div className="ai-sidebar-tabs">
+                <button 
+                  className={`ai-tab-btn ${aiTab === "overview" ? "active" : ""}`}
+                  onClick={() => setAiTab("overview")}
+                >
+                  Code Overview
+                </button>
+                {!isPlayground && (
+                  <button 
+                    className={`ai-tab-btn ${aiTab === "hints" ? "active" : ""}`}
+                    onClick={() => setAiTab("hints")}
+                  >
+                    Ask Nexai ({remainingHints}/5 left)
+                  </button>
+                )}
+              </div>
+              
+              <div className="ai-sidebar-content">
+                {aiError && (
+                  <div className="ai-error-box">
+                    <span className="ai-error-icon">⚠️</span>
+                    <p>{aiError}</p>
+                  </div>
+                )}
+                
+                {aiTab === "overview" ? (
+                  <div className="ai-overview-tab-content">
+                    <div className="ai-action-card">
+                      <p>Get a comprehensive review of your code's correctness, efficiency, logic, and view the optimal implementation.</p>
+                      <button 
+                        onClick={handleGetAiOverview}
+                        disabled={loadingReview || !code.trim()}
+                        className="ai-action-btn"
+                      >
+                        {loadingReview ? "Analyzing Code..." : "Analyze Current Code"}
+                      </button>
+                    </div>
+                    
+                    {loadingReview && (
+                      <div className="ai-loading-state">
+                        <span className="spinner"></span>
+                        <p>Groq AI is reviewing your code...</p>
+                      </div>
+                    )}
+                    
+                    {reviewContent && !loadingReview && (
+                      <div className="ai-review-result">
+                        {renderMarkdown(reviewContent)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="ai-hints-tab-content">
+                    <div className="ai-chat-history">
+                      {hintHistory.length === 0 ? (
+                        <div className="ai-chat-empty">
+                          <p>Ask Nexai for conceptual hints or approach strategies! Nexai won't write code for you, but will guide you to think and write code yourself.</p>
+                          <span className="hint-limit-notice">You have {remainingHints}/5 hints left.</span>
+                        </div>
+                      ) : (
+                        hintHistory.map((chat, idx) => (
+                          <div key={idx} className="ai-chat-message-pair">
+                            <div className="ai-chat-bubble user">
+                              <span className="bubble-label">You</span>
+                              <p>{chat.prompt}</p>
+                            </div>
+                            <div className="ai-chat-bubble assistant">
+                              <span className="bubble-label">Nexai</span>
+                              <div className="bubble-content">
+                                {chat.response === "Thinking..." ? (
+                                  <div className="ai-thinking-dots">
+                                    <span className="dot"></span>
+                                    <span className="dot"></span>
+                                    <span className="dot"></span>
+                                  </div>
+                                ) : (
+                                  renderMarkdown(chat.response)
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      {loadingHint && hintHistory[hintHistory.length - 1]?.response !== "Thinking..." && (
+                        <div className="ai-chat-bubble assistant">
+                          <span className="bubble-label">Nexai</span>
+                          <div className="ai-thinking-dots">
+                            <span className="dot"></span>
+                            <span className="dot"></span>
+                            <span className="dot"></span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <form onSubmit={handleSendAiPrompt} className="ai-chat-input-area">
+                      <input
+                        type="text"
+                        placeholder={remainingHints > 0 ? "Ask a question about the problem..." : "No hints left for this problem"}
+                        value={promptInput}
+                        onChange={(e) => setPromptInput(e.target.value)}
+                        disabled={loadingHint || remainingHints <= 0}
+                        className="ai-chat-input"
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={loadingHint || !promptInput.trim() || remainingHints <= 0}
+                        className="ai-chat-send-btn"
+                      >
+                        Send
+                      </button>
+                    </form>
+                    <div className="ai-hints-footer">
+                      <span>{remainingHints}/5 left</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </aside>
           </>
         )}
       </div>

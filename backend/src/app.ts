@@ -5,6 +5,7 @@ import userRoutes from "./routes/user.routes";
 import jwt from "jsonwebtoken";
 import { authMiddleware } from "./middleware/auth.middleware";
 import problemsRoutes from "./routes/problems.routes";
+import aiRoutes from "./routes/ai.routes";
 const app = express();
 
 app.use(cors());
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", problemsRoutes);
+app.use("/api", aiRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Coding Platform Backend Running 🚀");
