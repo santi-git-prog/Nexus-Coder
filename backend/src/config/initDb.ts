@@ -28,6 +28,11 @@ export async function initDb() {
       );
     `);
     
+    // Add language_configs column to problems for multi-language support
+    await pool.query(`
+      ALTER TABLE problems ADD COLUMN IF NOT EXISTS language_configs JSONB DEFAULT '{}'::jsonb;
+    `);
+
     console.log("Database checked/initialized successfully ✅");
   } catch (err) {
     console.error("Failed to initialize database:", err);

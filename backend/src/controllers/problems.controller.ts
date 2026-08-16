@@ -129,6 +129,8 @@ export const createProblem = async (req: Request, res: Response) => {
     function_name,
     return_type,
     parameters,
+    python_starter_code,
+    python_function_name,
   } = req.body;
   const adminId = (req as any).userId;
 
@@ -153,14 +155,22 @@ export const createProblem = async (req: Request, res: Response) => {
   if (!resolvedStarter.trim()) {
     resolvedStarter = generateStarterCode(meta);
   }
+  
+  let pythonConfig = {};
+  if (python_starter_code || python_function_name) {
+    pythonConfig = {
+      python_starter_code,
+      python_function_name: python_function_name || function_name
+    };
+  }
 
   try {
     const result = await pool.query(
       `INSERT INTO problems (
         problem_set_id, title, description, difficulty, tags, 
         input_format, output_format, constraints, starter_code, created_by,
-        problem_type, function_name, return_type, parameters
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+        problem_type, function_name, return_type, parameters, language_configs
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         problem_set_id,
         title,
@@ -176,6 +186,7 @@ export const createProblem = async (req: Request, res: Response) => {
         function_name || null,
         return_type || null,
         JSON.stringify(parsedParams),
+        { python: pythonConfig },
       ]
     );
     return res.status(201).json(result.rows[0]);

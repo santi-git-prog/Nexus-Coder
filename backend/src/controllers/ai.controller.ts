@@ -58,7 +58,7 @@ export const getAiOverview = async (req: Request, res: Response) => {
     const systemPrompt = `You are an expert AI code reviewer. Analyze the user's code for correctness, logic errors, compile issues, style, efficiency, and edge cases.
 Structure your response clearly. You MUST split your response into these two sections:
 1. **Code Review & Analysis**: Highlight any bugs, issues, time/space complexity, or general tips.
-2. **Optimal Implementation**: Provide the best-practices C solution with brief comments explaining the optimization. Keep it clean.`;
+2. **Optimal Implementation**: Provide the best-practices ${language || "C"} solution with brief comments explaining the optimization. Keep it clean.`;
 
     const userPrompt = problemDetails
       ? `Problem Title: ${problemDetails.title}
@@ -66,13 +66,13 @@ Problem Description:
 ${problemDetails.description}
 
 User's Code (${language || "C"}):
-\`\`\`c
+\`\`\`${language === 'python' ? 'python' : 'c'}
 ${code}
 \`\`\``
       : `Playground Compiler Context.
 
 User's Code (${language || "C"}):
-\`\`\`c
+\`\`\`${language === 'python' ? 'python' : 'c'}
 ${code}
 \`\`\``;
 
@@ -92,7 +92,7 @@ ${code}
 export const getAiHint = async (req: Request, res: Response) => {
   const userId = (req as any).userId;
   const { problemId } = req.params;
-  const { prompt } = req.body;
+  const { prompt, language } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ message: "Prompt is required" });
@@ -133,6 +133,8 @@ export const getAiHint = async (req: Request, res: Response) => {
       [userId, problemId]
     );
 
+    const langName = language || "C";
+
     // Build chat context
     const systemPrompt = `You are Nexai, a helpful and experienced coding tutor helping a student solve the coding challenge "${problem.title}".
 
@@ -140,7 +142,7 @@ Problem Description:
 ${problem.description}
 
 STRICT RULE:
-- Do NOT provide ANY code solutions, C code snippets, code blocks, or syntax answers.
+- Do NOT provide ANY code solutions, ${langName} code snippets, code blocks, or syntax answers.
 - You must ONLY give abstract hints, conceptual diagrams, algorithmic strategies, math, logic, or pseudo-code descriptions.
 - Help the student think, guide them toward the solution step-by-step, but let them write the actual code themselves.
 - Keep your answers helpful, concise, and abstract. Do not reveal the code.`;

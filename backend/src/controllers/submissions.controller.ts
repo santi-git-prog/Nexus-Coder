@@ -3,6 +3,7 @@ import { pool } from "../config/db";
 import { FunctionProblemMeta } from "../types/problem";
 import { parseParameters } from "../utils/codeWrapper";
 import { judgeSolution } from "../utils/judge";
+import { judgePythonSolution } from "../utils/pythonJudge";
 
 export const submitProblemSolution = async (req: Request, res: Response) => {
   const userId = (req as any).userId;
@@ -13,8 +14,9 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Code cannot be empty" });
   }
 
-  if (!language || language.toLowerCase() !== "c") {
-    return res.status(400).json({ message: "Currently only C language is supported" });
+  const lang = (language || "c").toLowerCase();
+  if (lang !== "c" && lang !== "python") {
+    return res.status(400).json({ message: "Unsupported language" });
   }
 
   try {
@@ -30,6 +32,8 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
       return_type: problemRow.return_type || "",
       parameters: parseParameters(problemRow.parameters),
     };
+    
+    const pythonConfig = problemRow.language_configs?.python || {};
 
     const testcasesRes = await pool.query(
       "SELECT * FROM testcases WHERE problem_id = $1 ORDER BY is_hidden ASC, created_at ASC",
@@ -43,13 +47,18 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
       });
     }
 
-    const outcome = await judgeSolution(code, testcases, meta);
+    let outcome;
+    if (lang === "python") {
+        outcome = await judgePythonSolution(code, testcases, meta, pythonConfig, { timeoutMs: 5000 });
+    } else {
+        outcome = await judgeSolution(code, testcases, meta);
+    }
 
-    if (outcome.status === "Compile Error") {
+    if (outcome.status === "Compile Error" || outcome.status === "Syntax Error") {
       await saveSubmissionMetrics(
         userId,
         problemId,
-        "c",
+        lang,
         code,
         outcome.status,
         0,
@@ -70,7 +79,7 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
     await saveSubmissionMetrics(
       userId,
       problemId,
-      "c",
+      lang,
       code,
       outcome.status,
       outcome.passed_count,
@@ -88,7 +97,7 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
       output_summary: outcome.output_summary,
       testcase_results: outcome.testcase_results,
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Submission crash error:", err);
     return res.status(500).json({ message: "Execution engine crash: " + message });
