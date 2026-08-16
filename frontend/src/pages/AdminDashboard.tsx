@@ -52,6 +52,8 @@ export default function AdminDashboard() {
     '[\n  { "name": "nums", "type": "int[]" },\n  { "name": "target", "type": "int" }\n]'
   );
   const [probStarterCode, setProbStarterCode] = useState("");
+  const [probPythonStarterCode, setProbPythonStarterCode] = useState("");
+  const [probPythonFunctionName, setProbPythonFunctionName] = useState("");
 
   // 3. Testcase Form
   const [tcInput, setTcInput] = useState("");
@@ -150,6 +152,8 @@ export default function AdminDashboard() {
         function_name: probFunctionName,
         return_type: probReturnType,
         parameters: parsedParams,
+        python_starter_code: probPythonStarterCode,
+        python_function_name: probPythonFunctionName,
       });
 
       showNotification(`Problem "${probTitle}" uploaded successfully!`, "success");
@@ -157,6 +161,8 @@ export default function AdminDashboard() {
       setProbDescription("");
       setProbTags("");
       setProbConstraints("");
+      setProbPythonStarterCode("");
+      setProbPythonFunctionName("");
       await fetchDropdownData();
     } catch (err: any) {
       console.error(err);
@@ -412,12 +418,35 @@ export default function AdminDashboard() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="prob-starter">Starter code (optional — auto-generated if empty)</label>
+                <label htmlFor="prob-starter">C Starter code (optional — auto-generated if empty)</label>
                 <textarea 
                   id="prob-starter" 
                   className="code-textarea-field"
                   value={probStarterCode}
                   onChange={(e) => setProbStarterCode(e.target.value)}
+                  rows={8}
+                />
+              </div>
+
+              <div className="form-row-grid">
+                <div className="form-group">
+                  <label htmlFor="prob-py-fn">Python Function Name (optional)</label>
+                  <input
+                    id="prob-py-fn"
+                    type="text"
+                    value={probPythonFunctionName}
+                    onChange={(e) => setProbPythonFunctionName(e.target.value)}
+                    placeholder="twoSum"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="prob-py-starter">Python Starter code (optional)</label>
+                <textarea 
+                  id="prob-py-starter" 
+                  className="code-textarea-field"
+                  value={probPythonStarterCode}
+                  onChange={(e) => setProbPythonStarterCode(e.target.value)}
                   rows={8}
                 />
               </div>

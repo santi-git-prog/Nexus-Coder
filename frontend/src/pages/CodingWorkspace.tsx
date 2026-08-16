@@ -35,6 +35,7 @@ type ProblemDetail = {
   function_name?: string;
   return_type?: string;
   parameters?: ProblemParameter[] | string;
+  language_configs?: any;
 };
 
 type SampleTestcase = {
@@ -79,16 +80,23 @@ export default function CodingWorkspace() {
   // Detect playground mode (no problem)
   const isPlayground = !problemId;
 
-  const DEFAULT_PLAYGROUND_CODE = `#include <stdio.h>
+  const DEFAULT_PLAYGROUND_CODE_C = `#include <stdio.h>
 
 int main() {
     printf("Hello, World!\\n");
     return 0;
 }`;
+  const DEFAULT_PLAYGROUND_CODE_PY = `print("Hello, World!")`;
 
   // Core Editor states
   const [language, setLanguage] = useState<string>("c");
-  const [code, setCode] = useState<string>(isPlayground ? DEFAULT_PLAYGROUND_CODE : "");
+  const [codeMap, setCodeMap] = useState<Record<string, string>>({
+    c: isPlayground ? DEFAULT_PLAYGROUND_CODE_C : "",
+    python: isPlayground ? DEFAULT_PLAYGROUND_CODE_PY : ""
+  });
+  
+  const code = codeMap[language] || "";
+  const setCode = (newCode: string) => setCodeMap(prev => ({ ...prev, [language]: newCode }));
   const [input, setInput] = useState<string>("");
   const [customExpected, setCustomExpected] = useState<string>("");
   const [inputMode, setInputMode] = useState<"sample" | "custom">(isPlayground ? "custom" : "sample");
@@ -186,6 +194,7 @@ int main() {
     try {
       const response = await api.post(`/problems/${problemId}/ai-hint`, {
         prompt: userPrompt,
+        language: language,
       });
       setHintHistory([
         ...hintHistory,
@@ -213,8 +222,17 @@ int main() {
         // Fetch problem details
         const probRes = await api.get(`/problems/${problemId}`);
         setProblem(probRes.data);
-        const starter = probRes.data.starter_code || "";
-        setCode(stripEditorIncludes(starter) || starter);
+        const starterC = probRes.data.starter_code || "";
+        const starterPy = probRes.data.language_configs?.python?.python_starter_code || "";
+        setCodeMap({
+          c: stripEditorIncludes(starterC) || starterC,
+          python: starterPy
+        });
+        
+        // Fallback to C if Python is selected but not supported
+        if (!starterPy && language === "python") {
+          setLanguage("c");
+        }
 
         // Fetch sample testcases
         const testRes = await api.get(`/problems/${problemId}/sample-testcases`);
@@ -373,8 +391,13 @@ int main() {
   };
 
   const handleResetCode = () => {
-    const raw = problem?.starter_code || "";
-    const defaultTemplate = stripEditorIncludes(raw) || raw;
+    let raw = "";
+    if (language === "python") {
+      raw = problem?.language_configs?.python?.python_starter_code || "";
+    } else {
+      raw = problem?.starter_code || "";
+    }
+    const defaultTemplate = language === "c" ? (stripEditorIncludes(raw) || raw) : raw;
     if (window.confirm("Are you sure you want to reset your editor? All active changes will be lost.")) {
       setCode(defaultTemplate);
     }
@@ -500,6 +523,7 @@ int main() {
                     <LanguageSelector
                       selectedLanguage={language}
                       onChange={setLanguage}
+                      availableLanguages={isPlayground || !!problem?.language_configs?.python?.python_starter_code ? ["c", "python"] : ["c"]}
                     />
                     <button onClick={handleResetCode} className="reset-code-btn">
                       Reset
