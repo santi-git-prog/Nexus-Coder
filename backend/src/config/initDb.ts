@@ -13,6 +13,9 @@ export async function initDb() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_purpose VARCHAR(20);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_attempts INTEGER NOT NULL DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_sent_at TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255);
+      ALTER TABLE users ALTER COLUMN password DROP NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique ON users (google_sub) WHERE google_sub IS NOT NULL;
     `);
     
     // If there are any users who have is_verified as NULL, set them to TRUE (existing users)

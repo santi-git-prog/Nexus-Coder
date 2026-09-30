@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import GoogleSignIn from "../components/GoogleSignIn";
 import "./auth.css";
 
 export default function Register() {
@@ -119,6 +120,7 @@ export default function Register() {
         )}
 
         {!showOtp ? (
+          <>
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="input-group">
               <label className="input-label" htmlFor="register-username">Username</label>
@@ -138,7 +140,7 @@ export default function Register() {
               <input
                 id="register-email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="name@psgtech.ac.in"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="auth-input"
@@ -167,6 +169,14 @@ export default function Register() {
               {loading ? "Creating account..." : "Register"}
             </button>
           </form>
+          <GoogleSignIn
+            onAuthenticated={(token) => {
+              login(token);
+              navigate("/problems");
+            }}
+            onError={setError}
+          />
+          </>
         ) : (
           <form onSubmit={handleVerifyOtp} className="auth-form">
             <div className="input-group">

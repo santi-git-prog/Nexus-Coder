@@ -155,6 +155,43 @@
   gap: 22px;
 }
 
+.google-sign-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.google-sign-in > div:nth-child(2) {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-google-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border-color);
+}
+
 .input-group {
   display: flex;
   flex-direction: column;
