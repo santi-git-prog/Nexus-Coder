@@ -1,13 +1,13 @@
 FROM node:20-slim
 
 # Install GCC, G++, Python 3, and basic tools for executing user code
-# python3-is-python creates a 'python' symlink pointing to python3
+# Create python → python3 symlink so both commands work
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     python3 \
-    python3-is-python \
     make \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
