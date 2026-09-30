@@ -38,7 +38,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/auth/login", { email: email.trim().toLowerCase(), password });
       login(res.data.token);
       navigate("/problems");
     } catch (err: any) {
@@ -61,7 +61,7 @@ export default function Login() {
     setVerificationLoading(true);
 
     try {
-      const res = await api.post("/auth/verify-otp", { email, otp });
+      const res = await api.post("/auth/verify-otp", { email: email.trim().toLowerCase(), otp });
       login(res.data.token);
       navigate("/problems");
     } catch (err: any) {
@@ -77,7 +77,7 @@ export default function Login() {
     setResendTimer(60);
 
     try {
-      await api.post("/auth/resend-otp", { email });
+      await api.post("/auth/resend-otp", { email: email.trim().toLowerCase() });
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to resend verification code.");
       setResendDisabled(false);
@@ -121,20 +121,22 @@ export default function Login() {
         {!showOtp ? (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="input-group">
-              <label className="input-label">Email Address</label>
+              <label className="input-label" htmlFor="login-email">Email Address</label>
               <input
+                id="login-email"
                 type="email"
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="auth-input"
+                autoComplete="email"
                 required
               />
             </div>
 
             <div className="input-group">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <label className="input-label">Password</label>
+                <label className="input-label" htmlFor="login-password">Password</label>
                 <Link 
                   to="/forgot-password" 
                   style={{ 
@@ -149,11 +151,13 @@ export default function Login() {
                 </Link>
               </div>
               <input
+                id="login-password"
                 type="password"
                 placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="auth-input"
+                autoComplete="current-password"
                 required
               />
             </div>
@@ -165,14 +169,18 @@ export default function Login() {
         ) : (
           <form onSubmit={handleVerifyOtp} className="auth-form">
             <div className="input-group">
-              <label className="input-label">Verification Code (OTP)</label>
+              <label className="input-label" htmlFor="login-otp">Verification Code (OTP)</label>
               <input
+                id="login-otp"
                 type="text"
                 placeholder="Enter 6-digit code"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="auth-input"
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
                 required
                 style={{ textAlign: "center", letterSpacing: "4px", fontSize: "18px", fontWeight: "bold" }}
               />
@@ -181,7 +189,7 @@ export default function Login() {
               </span>
             </div>
 
-            <button type="submit" className="auth-btn" disabled={verificationLoading}>
+            <button type="submit" className="auth-btn" disabled={verificationLoading || otp.length !== 6}>
               {verificationLoading ? "Verifying..." : "Verify Code"}
             </button>
 

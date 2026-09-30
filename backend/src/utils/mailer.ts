@@ -3,13 +3,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+let transporter: nodemailer.Transporter | undefined;
+
+const getTransporter = () => {
+  const user = process.env.EMAIL_USER?.trim();
+  const pass = process.env.EMAIL_PASS?.replace(/\s+/g, "");
+  if (!user || !pass) {
+    throw new Error("EMAIL_USER or EMAIL_PASS is not configured");
+  }
+  transporter ??= nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+  return { client: transporter, user };
+};
 
 export const sendOtpEmail = async (
   email: string,
@@ -129,16 +136,18 @@ export const sendOtpEmail = async (
     </html>
   `;
 
+  const { client, user } = getTransporter();
   const mailOptions = {
-    from: `"Nexus Code Support" <${process.env.EMAIL_USER}>`,
+    from: `"Nexus Code Support" <${user}>`,
     to: email,
     subject: `[Nexus Code] ${title}`,
     html: htmlContent,
+    text: `${heading}\n\n${description}\n\nYour verification code is ${otp}. It expires in 15 minutes.`,
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${email}. Message ID: ${info.messageId}`);
+    const info = await client.sendMail(mailOptions);
+    console.log(`Verification email sent. Message ID: ${info.messageId}`);
     return info;
   } catch (error) {
     console.error("Error sending email:", error);

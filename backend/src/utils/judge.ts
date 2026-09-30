@@ -58,6 +58,12 @@ const compileSource = (
       const dockerCompile = spawn("docker", [
         "run",
         "--rm",
+        "--network=none",
+        "--pids-limit=64",
+        "--memory=256m",
+        "--cpus=0.5",
+        "--security-opt=no-new-privileges",
+        "--cap-drop=ALL",
         "-v",
         `${hostAbsPath}:/workspace`,
         "-w",
@@ -72,6 +78,7 @@ const compileSource = (
       dockerCompile.stderr.on("data", (d) => {
         stderrData += d.toString();
       });
+      dockerCompile.on("error", (error) => resolve({ ok: false, stderr: error.message }));
       dockerCompile.on("close", (code) => resolve({ ok: code === 0, stderr: stderrData }));
     });
   }
@@ -99,8 +106,12 @@ const runBinary = (
         "run",
         "--rm",
         "-i",
+        "--network=none",
+        "--pids-limit=64",
         "--memory=128m",
         "--cpus=0.5",
+        "--security-opt=no-new-privileges",
+        "--cap-drop=ALL",
         "-v",
         `${hostAbsPath}:/workspace`,
         "-w",
@@ -126,6 +137,10 @@ const runBinary = (
       });
       dockerRun.stderr.on("data", (d) => {
         stderrData += d.toString();
+      });
+      dockerRun.on("error", (error) => {
+        clearTimeout(timeout);
+        resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
       });
       dockerRun.on("close", (code) => {
         clearTimeout(timeout);
@@ -159,6 +174,10 @@ const runBinary = (
     });
     localRun.stderr.on("data", (d) => {
       stderrData += d.toString();
+    });
+    localRun.on("error", (error) => {
+      clearTimeout(timeout);
+      resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
     });
     localRun.on("close", (code) => {
       clearTimeout(timeout);
@@ -471,4 +490,3 @@ export const runPlayground = async (
     cleanupDir(runDir);
   }
 };
-

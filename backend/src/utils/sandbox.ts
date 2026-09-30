@@ -16,14 +16,19 @@ const commandExists = (command: string, timeoutMs = 2000): boolean => {
   }
 };
 
-/** Prefer local GCC (faster on dev machines); fall back to Docker when GCC is not on PATH. */
+/** Untrusted submissions must run in containers in production. */
 export const getSandboxMode = (): SandboxMode => {
   const now = Date.now();
   if (cachedMode !== null && now - lastModeCheckTime < MODE_CACHE_MS) {
     return cachedMode;
   }
 
-  if (commandExists("gcc --version")) {
+  const isProduction = process.env.NODE_ENV === "production";
+  if (isProduction && commandExists("docker ps") && commandExists("docker image inspect gcc")) {
+    cachedMode = "docker";
+  } else if (isProduction) {
+    cachedMode = "none";
+  } else if (commandExists("gcc --version")) {
     cachedMode = "local";
   } else if (commandExists("docker ps") && commandExists("docker image inspect gcc")) {
     cachedMode = "docker";

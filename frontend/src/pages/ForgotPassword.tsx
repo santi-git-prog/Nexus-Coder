@@ -21,8 +21,8 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      await api.post("/auth/forgot-password", { email });
-      setMessage("Verification code sent to your email.");
+      await api.post("/auth/forgot-password", { email: email.trim().toLowerCase() });
+      setMessage("If an account exists for this email, a reset code has been sent.");
       setStep(2);
     } catch (err: any) {
       setError(err.response?.data?.message || "Something went wrong. Please try again.");
@@ -45,7 +45,7 @@ export default function ForgotPassword() {
 
     try {
       const res = await api.post("/auth/reset-password", {
-        email,
+        email: email.trim().toLowerCase(),
         otp,
         newPassword,
       });
@@ -131,10 +131,13 @@ export default function ForgotPassword() {
                 type="text"
                 placeholder="123456"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="auth-input"
                 required
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
               />
             </div>
 
@@ -146,6 +149,8 @@ export default function ForgotPassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="auth-input"
+                minLength={8}
+                maxLength={128}
                 required
               />
             </div>
@@ -158,6 +163,8 @@ export default function ForgotPassword() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="auth-input"
+                minLength={8}
+                maxLength={128}
                 required
               />
             </div>

@@ -59,8 +59,12 @@ const runPythonScript = (
         "run",
         "--rm",
         "-i",
+        "--network=none",
+        "--pids-limit=64",
         "--memory=128m",
         "--cpus=0.5",
+        "--security-opt=no-new-privileges",
+        "--cap-drop=ALL",
         "-v",
         `${hostAbsPath}:/workspace`,
         "-w",
@@ -86,6 +90,10 @@ const runPythonScript = (
       });
       dockerRun.stderr.on("data", (d) => {
         stderrData += d.toString();
+      });
+      dockerRun.on("error", (error) => {
+        clearTimeout(timeout);
+        resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
       });
       dockerRun.on("close", (code) => {
         clearTimeout(timeout);
@@ -120,6 +128,10 @@ const runPythonScript = (
     });
     localRun.stderr.on("data", (d) => {
       stderrData += d.toString();
+    });
+    localRun.on("error", (error) => {
+      clearTimeout(timeout);
+      resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
     });
     localRun.on("close", (code) => {
       clearTimeout(timeout);
@@ -192,6 +204,16 @@ export const judgePythonSolution = async (
 ): Promise<JudgeOutcome> => {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const sandboxMode = getSandboxMode();
+
+  if (sandboxMode === "none") {
+    return {
+      status: "Runtime Error",
+      passed_count: 0,
+      total_count: testcases.length,
+      output_summary: "A Docker-based code sandbox is required in production.",
+      testcase_results: [],
+    };
+  }
 
   if (testcases.length === 0) {
     return {
@@ -266,6 +288,15 @@ export const runCustomPythonCase = async (
 }> => {
   const sandboxMode = getSandboxMode();
 
+  if (sandboxMode === "none") {
+    return {
+      stdout: "",
+      stderr: "A Docker-based code sandbox is required in production.",
+      compile_error: "A Docker-based code sandbox is required in production.",
+      status: "Runtime Error",
+    };
+  }
+
   const runId = `custom_py_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const runDir = path.join(TEMP_RUNS_DIR, runId);
   fs.mkdirSync(runDir, { recursive: true });
@@ -327,6 +358,15 @@ export const runPlaygroundPython = async (
 }> => {
   const sandboxMode = getSandboxMode();
 
+  if (sandboxMode === "none") {
+    return {
+      stdout: "",
+      stderr: "A Docker-based code sandbox is required in production.",
+      compile_error: "A Docker-based code sandbox is required in production.",
+      status: "Runtime Error",
+    };
+  }
+
   const runId = `playground_py_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const runDir = path.join(TEMP_RUNS_DIR, runId);
   fs.mkdirSync(runDir, { recursive: true });
@@ -340,7 +380,8 @@ export const runPlaygroundPython = async (
       if (sandboxMode === "docker") {
           const hostAbsPath = path.resolve(runDir);
           proc = spawn("docker", [
-            "run", "--rm", "-i", "--memory=128m", "--cpus=0.5",
+            "run", "--rm", "-i", "--network=none", "--pids-limit=64",
+            "--memory=128m", "--cpus=0.5", "--security-opt=no-new-privileges", "--cap-drop=ALL",
             "-v", `${hostAbsPath}:/workspace`, "-w", "/workspace",
             "python:3.10-slim", "python", "solution.py"
           ]);
@@ -360,6 +401,11 @@ export const runPlaygroundPython = async (
 
       proc.stdout.on("data", (d: any) => { stdoutData += d.toString(); });
       proc.stderr.on("data", (d: any) => { stderrData += d.toString(); });
+
+      proc.on("error", (error: Error) => {
+        clearTimeout(timeout);
+        resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
+      });
 
       proc.on("close", (code: number | null) => {
         clearTimeout(timeout);

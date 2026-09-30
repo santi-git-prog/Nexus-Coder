@@ -89,13 +89,14 @@ export const submitProblemSolution = async (req: Request, res: Response) => {
 
     const overallStatus = outcome.status === "Success" ? "Solved" : "Attempted";
     await updateProblemProgress(userId, problemId, overallStatus);
+    const hiddenCaseFailed = outcome.testcase_results.some((result) => result.is_hidden && !result.passed);
 
     return res.json({
       status: outcome.status,
       passed_count: outcome.passed_count,
       total_count: outcome.total_count,
-      output_summary: outcome.output_summary,
-      testcase_results: outcome.testcase_results,
+      output_summary: hiddenCaseFailed ? "One or more test cases failed." : outcome.output_summary,
+      testcase_results: outcome.testcase_results.filter((result) => !result.is_hidden),
     });
   } catch (err: any) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -114,17 +115,13 @@ const saveSubmissionMetrics = async (
   totalCount: number,
   outputSummary: string
 ) => {
-  try {
-    await pool.query(
-      `INSERT INTO submissions (
-        user_id, problem_id, language, code, status, 
-        passed_count, total_count, output_summary, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
-      [userId, problemId, language, code, status, passedCount, totalCount, outputSummary]
-    );
-  } catch (err) {
-    console.error("DB error saving submission metrics:", err);
-  }
+  await pool.query(
+    `INSERT INTO submissions (
+      user_id, problem_id, language, code, status,
+      passed_count, total_count, output_summary, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+    [userId, problemId, language, code, status, passedCount, totalCount, outputSummary]
+  );
 };
 
 const updateProblemProgress = async (
@@ -132,25 +129,16 @@ const updateProblemProgress = async (
   problemId: string,
   status: "Attempted" | "Solved"
 ) => {
-  try {
-    if (status === "Attempted") {
-      const checkRes = await pool.query(
-        "SELECT status FROM problem_progress WHERE user_id = $1 AND problem_id = $2",
-        [userId, problemId]
-      );
-      if (checkRes.rows.length > 0 && checkRes.rows[0].status === "Solved") {
-        return;
-      }
-    }
-
-    await pool.query(
-      `INSERT INTO problem_progress (user_id, problem_id, status, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (user_id, problem_id)
-       DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()`,
-      [userId, problemId, status]
-    );
-  } catch (err) {
-    console.error("DB error updating problem progress status:", err);
-  }
+  await pool.query(
+    `INSERT INTO problem_progress (user_id, problem_id, status, updated_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (user_id, problem_id)
+     DO UPDATE SET
+       status = CASE
+         WHEN problem_progress.status = 'Solved' THEN 'Solved'
+         ELSE EXCLUDED.status
+       END,
+       updated_at = NOW()`,
+    [userId, problemId, status]
+  );
 };

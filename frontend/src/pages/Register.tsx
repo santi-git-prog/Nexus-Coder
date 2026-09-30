@@ -39,11 +39,13 @@ export default function Register() {
     setLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       await api.post("/auth/register", {
-        username,
-        email,
+        username: username.trim(),
+        email: normalizedEmail,
         password,
       });
+      setEmail(normalizedEmail);
       setShowOtp(true);
       setResendTimer(60);
       setResendDisabled(true);
@@ -119,8 +121,9 @@ export default function Register() {
         {!showOtp ? (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="input-group">
-              <label className="input-label">Username</label>
+              <label className="input-label" htmlFor="register-username">Username</label>
               <input
+                id="register-username"
                 type="text"
                 placeholder="coder123"
                 value={username}
@@ -131,25 +134,31 @@ export default function Register() {
             </div>
 
             <div className="input-group">
-              <label className="input-label">Email Address</label>
+              <label className="input-label" htmlFor="register-email">Email Address</label>
               <input
+                id="register-email"
                 type="email"
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="auth-input"
+                autoComplete="email"
                 required
               />
             </div>
 
             <div className="input-group">
-              <label className="input-label">Password</label>
+              <label className="input-label" htmlFor="register-password">Password</label>
               <input
+                id="register-password"
                 type="password"
                 placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="auth-input"
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
                 required
               />
             </div>
@@ -161,14 +170,18 @@ export default function Register() {
         ) : (
           <form onSubmit={handleVerifyOtp} className="auth-form">
             <div className="input-group">
-              <label className="input-label">Verification Code (OTP)</label>
+              <label className="input-label" htmlFor="register-otp">Verification Code (OTP)</label>
               <input
+                id="register-otp"
                 type="text"
                 placeholder="Enter 6-digit code"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 className="auth-input"
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
                 required
                 style={{ textAlign: "center", letterSpacing: "4px", fontSize: "18px", fontWeight: "bold" }}
               />
@@ -177,7 +190,7 @@ export default function Register() {
               </span>
             </div>
 
-            <button type="submit" className="auth-btn" disabled={verificationLoading}>
+            <button type="submit" className="auth-btn" disabled={verificationLoading || otp.length !== 6}>
               {verificationLoading ? "Verifying..." : "Verify Code"}
             </button>
 

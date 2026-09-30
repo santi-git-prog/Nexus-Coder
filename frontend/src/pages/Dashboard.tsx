@@ -9,8 +9,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     api
-      .get("/test-protected")
-      .then((res) => setMessage(res.data.message))
+      .get("/users/me")
+      .then((res) => setMessage(`Signed in as ${res.data.username}`))
       .catch((err) => setMessage("Failed to fetch data: " + err.message));
   }, []);
 

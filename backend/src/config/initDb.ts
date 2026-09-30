@@ -9,6 +9,10 @@ export async function initDb() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS otp VARCHAR(6);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expiry TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_hash CHAR(64);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_purpose VARCHAR(20);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_attempts INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_sent_at TIMESTAMP WITH TIME ZONE;
     `);
     
     // If there are any users who have is_verified as NULL, set them to TRUE (existing users)
@@ -36,6 +40,6 @@ export async function initDb() {
     console.log("Database checked/initialized successfully ✅");
   } catch (err) {
     console.error("Failed to initialize database:", err);
+    throw err;
   }
 }
-
