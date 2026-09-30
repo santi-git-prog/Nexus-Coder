@@ -238,7 +238,6 @@ export const judgePythonSolution = async (
     for (let i = 0; i < testcases.length; i++) {
       const tc = testcases[i];
       const source = wrapPythonUserCode(userCode, meta, tc.input, pythonConfig);
-      
       const runResult = await runPythonScript(runDir, source, sandboxMode, timeoutMs);
       const { status: tcStatus, passed } = evaluateTestcase(tc, runResult);
 

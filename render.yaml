@@ -19,7 +19,3 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_ALLOWED_DOMAIN
-        value: psgtech.ac.in

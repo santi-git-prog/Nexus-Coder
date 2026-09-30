@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
-import { OAuth2Client } from "google-auth-library";
 import { pool } from "../config/db";
 import { sendOtpEmail } from "../utils/mailer";
 
@@ -25,97 +24,6 @@ const signToken = (userId: string) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error("JWT_SECRET is not configured");
   return jwt.sign({ userId }, secret, { expiresIn: "1d" });
-};
-
-const googleClient = new OAuth2Client();
-
-const allowedEmailDomain = () =>
-  (process.env.GOOGLE_ALLOWED_DOMAIN || "psgtech.ac.in").trim().toLowerCase() || "psgtech.ac.in";
-
-const isAllowedEmail = (email: string) => email.endsWith(`@${allowedEmailDomain()}`);
-
-export const googleSignIn = async (req: Request, res: Response) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const credential = typeof req.body.credential === "string" ? req.body.credential : "";
-  if (!clientId) {
-    return res.status(503).json({ message: "Google sign-in is not configured yet." });
-  }
-  if (!credential || credential.length > 10_000) {
-    return res.status(400).json({ message: "Google sign-in credential is missing or invalid." });
-  }
-
-  const allowedDomain = allowedEmailDomain();
-  let payload;
-  try {
-    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: clientId });
-    payload = ticket.getPayload();
-  } catch {
-    return res.status(401).json({ message: "Google sign-in could not be verified. Please try again." });
-  }
-
-  const email = normalizeEmail(payload?.email);
-  const subject = payload?.sub;
-  const hostedDomain = payload?.hd?.toLowerCase();
-  if (
-    !subject ||
-    payload?.email_verified !== true ||
-    !isAllowedEmail(email) ||
-    hostedDomain !== allowedDomain
-  ) {
-    return res.status(403).json({ message: `Use a verified Google account from @${allowedDomain}.` });
-  }
-
-  let dbClient;
-  try {
-    dbClient = await pool.connect();
-    await dbClient.query("BEGIN");
-    await dbClient.query("SELECT pg_advisory_xact_lock(hashtext($1))", [email]);
-    const matched = await dbClient.query(
-      `SELECT id, username, email, role, google_sub
-         FROM users
-        WHERE LOWER(email) = $1 OR google_sub = $2
-        FOR UPDATE`,
-      [email, subject]
-    );
-
-    if (matched.rows.length > 1 || (matched.rows[0]?.google_sub && matched.rows[0].google_sub !== subject)) {
-      await dbClient.query("ROLLBACK");
-      return res.status(409).json({ message: "This Google account cannot be linked to the existing account." });
-    }
-
-    let user = matched.rows[0];
-    if (user) {
-      const linked = await dbClient.query(
-        `UPDATE users SET google_sub = $1, is_verified = TRUE
-          WHERE id = $2
-          RETURNING id, username, email, role`,
-        [subject, user.id]
-      );
-      user = linked.rows[0];
-    } else {
-      const localPart = email.split("@")[0].replace(/[^a-z0-9_]/g, "_").slice(0, 24) || "student";
-      const username = `${localPart}_${subject.slice(-8)}`.slice(0, 40);
-      const inserted = await dbClient.query(
-        `INSERT INTO users (username, email, password, is_verified, google_sub)
-         VALUES ($1, $2, NULL, TRUE, $3)
-         RETURNING id, username, email, role`,
-        [username, email, subject]
-      );
-      user = inserted.rows[0];
-    }
-
-    await dbClient.query("COMMIT");
-    return res.json({
-      token: signToken(user.id),
-      user: { id: user.id, username: user.username, email: user.email, role: user.role },
-    });
-  } catch (error) {
-    if (dbClient) await dbClient.query("ROLLBACK").catch(() => undefined);
-    console.error("Google sign-in failed:", error);
-    return res.status(500).json({ message: "Could not complete Google sign-in. Please try again." });
-  } finally {
-    dbClient?.release();
-  }
 };
 
 const issueOtp = async (userId: string, email: string, purpose: OtpPurpose) => {
@@ -221,10 +129,6 @@ export const register = async (req: Request, res: Response) => {
     if (username.length > 40 || password.length < 8 || password.length > 128 || !emailIsValid(email)) {
       return res.status(400).json({ message: "Enter a valid email, a username up to 40 characters, and a password between 8 and 128 characters" });
     }
-    if (!isAllowedEmail(email)) {
-      return res.status(403).json({ message: `Registration is limited to @${allowedEmailDomain()} accounts.` });
-    }
-
     const existing = await pool.query(
       "SELECT id, is_verified, otp_sent_at FROM users WHERE LOWER(email) = $1",
       [email]
@@ -289,10 +193,6 @@ export const login = async (req: Request, res: Response) => {
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
-    if (!isAllowedEmail(email)) {
-      return res.status(403).json({ message: `Sign-in is limited to @${allowedEmailDomain()} accounts.` });
-    }
-
     const result = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1", [email]);
     if (
       result.rows.length === 0 ||
