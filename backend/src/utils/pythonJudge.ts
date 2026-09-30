@@ -107,9 +107,11 @@ const runPythonScript = (
     });
   }
 
+  // Local (non-docker) execution — python3 is pre-installed by our Dockerfile.
+  // Try python3 first (Linux/macOS/Docker container), fall back to python (Windows dev).
+  const pythonCmd =
+    process.platform === "win32" ? "python" : "python3";
   return new Promise((resolve) => {
-    // Assuming python is in PATH
-    const pythonCmd = process.platform === "win32" ? "python" : "python3";
     const localRun = spawn(pythonCmd, [sourceFile]);
     let stdoutData = "";
     let stderrData = "";

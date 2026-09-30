@@ -446,32 +446,45 @@ export const runPlayground = async (
       };
     }
 
-    // Run with optional stdin piped in
-    const execFile = path.join(runDir, EXECUTABLE_NAME);
-    const runResult = await new Promise<RunOnceResult>((resolve) => {
-      const proc = spawn(execFile);
-      let stdoutData = "";
-      let stderrData = "";
-      let isTimedOut = false;
+    // Run the compiled binary with optional stdin piped in.
+    // For docker mode we use runBinary which handles container execution;
+    // for local mode we spawn directly so we can pipe stdin.
+    let runResult: RunOnceResult;
+    if (sandboxMode === "docker") {
+      // runBinary closes stdin immediately; playground ignores stdin in docker mode for simplicity.
+      runResult = await runBinary(runDir, sandboxMode, timeoutMs);
+    } else {
+      const execFile = path.join(runDir, EXECUTABLE_NAME);
+      runResult = await new Promise<RunOnceResult>((resolve) => {
+        const proc = spawn(execFile);
+        let stdoutData = "";
+        let stderrData = "";
+        let isTimedOut = false;
 
-      const timeout = setTimeout(() => {
-        isTimedOut = true;
-        try { proc.kill("SIGKILL"); } catch { /* ignore */ }
-      }, timeoutMs);
+        const timeout = setTimeout(() => {
+          isTimedOut = true;
+          try { proc.kill("SIGKILL"); } catch { /* ignore */ }
+        }, timeoutMs);
 
-      proc.stdout.on("data", (d) => { stdoutData += d.toString(); });
-      proc.stderr.on("data", (d) => { stderrData += d.toString(); });
+        proc.stdout.on("data", (d) => { stdoutData += d.toString(); });
+        proc.stderr.on("data", (d) => { stderrData += d.toString(); });
 
-      proc.on("close", (code) => {
-        clearTimeout(timeout);
-        resolve({ exitCode: code ?? 0, stdout: stdoutData, stderr: stderrData, isTimedOut });
+        proc.on("error", (error) => {
+          clearTimeout(timeout);
+          resolve({ exitCode: 1, stdout: stdoutData, stderr: error.message, isTimedOut: false });
+        });
+
+        proc.on("close", (code) => {
+          clearTimeout(timeout);
+          resolve({ exitCode: code ?? 0, stdout: stdoutData, stderr: stderrData, isTimedOut });
+        });
+
+        if (stdinData) {
+          proc.stdin.write(stdinData);
+        }
+        proc.stdin.end();
       });
-
-      if (stdinData) {
-        proc.stdin.write(stdinData);
-      }
-      proc.stdin.end();
-    });
+    }
 
     if (runResult.isTimedOut) {
       return { stdout: "", stderr: "Time Limit Exceeded", compile_error: "", status: "Time Limit Exceeded" };
