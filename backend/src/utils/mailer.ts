@@ -116,32 +116,38 @@ export const sendOtpEmail = async (
     </html>
   `;
 
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.EMAIL_FROM?.trim();
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY or EMAIL_FROM is not configured");
+  const apiKey = process.env.BREVO_API_KEY?.trim();
+  const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim();
+  const senderName = process.env.BREVO_SENDER_NAME?.trim() || "Nexus Code";
+  if (!apiKey || !senderEmail) {
+    throw new Error("BREVO_API_KEY or BREVO_SENDER_EMAIL is not configured");
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "api-key": apiKey,
+      Accept: "application/json",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from,
-      to: [email],
+      sender: { email: senderEmail, name: senderName },
+      to: [{ email }],
       subject: `[Nexus Code] ${title}`,
-      html: htmlContent,
-      text: `${heading}\n\n${description}\n\nYour verification code is ${otp}. It expires in 15 minutes.`,
+      htmlContent,
+      textContent: `${heading}\n\n${description}\n\nYour verification code is ${otp}. It expires in 15 minutes.`,
     }),
     signal: AbortSignal.timeout(10_000),
   });
 
-  const result = await response.json().catch(() => ({})) as { id?: string; message?: string };
+  const result = await response.json().catch(() => ({})) as {
+    messageId?: string;
+    message?: string;
+    code?: string;
+  };
   if (!response.ok) {
-    throw new Error(`Resend API request failed (${response.status}): ${result.message || response.statusText}`);
+    throw new Error(`Brevo API request failed (${response.status}): ${result.message || result.code || response.statusText}`);
   }
-  console.log(`Verification email accepted by provider. Message ID: ${result.id || "unknown"}`);
+  console.log(`Verification email accepted by Brevo. Message ID: ${result.messageId || "unknown"}`);
   return result;
 };
