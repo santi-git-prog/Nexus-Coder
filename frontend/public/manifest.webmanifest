@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Nexus Code",
+  "short_name": "Nexus Code",
+  "description": "Nexus Code coding practice and online compiler.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050510",
+  "theme_color": "#06060e",
+  "icons": [
+    {
+      "src": "/nexus1-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nexus1-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

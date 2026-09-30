@@ -1,0 +1,88 @@
+.app-install-prompt {
+  position: relative;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  color: #f8fafc;
+  background: #10152c;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
+}
+
+.app-install-icon {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+.app-install-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.app-install-copy strong {
+  font-size: 14px;
+}
+
+.app-install-copy span {
+  color: #b6c0d4;
+}
+
+.app-install-action {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 14px;
+  color: #041014;
+  font-size: 13px;
+  font-weight: 700;
+  background: #22d3ee;
+  border: 0;
+  border-radius: 6px;
+}
+
+.app-install-action:hover {
+  background: #67e8f9;
+}
+
+.app-install-dismiss {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 36px;
+  color: #b6c0d4;
+  font-size: 22px;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+}
+
+@media (min-width: 768px) {
+  .app-install-prompt {
+    justify-content: center;
+  }
+
+  .app-install-copy {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-install-prompt {
+    gap: 8px;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .app-install-action {
+    padding: 0 9px;
+  }
+}
