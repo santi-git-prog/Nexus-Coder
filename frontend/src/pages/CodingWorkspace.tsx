@@ -101,6 +101,7 @@ int main() {
   const [customExpected, setCustomExpected] = useState<string>("");
   const [inputMode, setInputMode] = useState<"sample" | "custom">(isPlayground ? "custom" : "sample");
   const [runPanelMode, setRunPanelMode] = useState<"console" | "testcases">("console");
+  const [mobileView, setMobileView] = useState<"description" | "code" | "results">("code");
 
   // Problem loaded states
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
@@ -258,6 +259,7 @@ int main() {
   const handleRun = async () => {
     if (!code.trim()) return;
 
+    setMobileView("results");
     setRunStatus("Running");
     setStdout("");
     setStderr("");
@@ -344,6 +346,7 @@ int main() {
   const handleSubmit = async () => {
     if (!code.trim() || !problemId) return;
 
+    setMobileView("results");
     setSubmitting(true);
     setShowSubmitPanel(true);
     setRunPanelMode("testcases");
@@ -430,7 +433,10 @@ int main() {
   };
 
   return (
-    <div className={`workspace-wrapper ${isPlayground ? "playground-layout" : "split-layout"}`}>
+    <div
+      className={`workspace-wrapper ${isPlayground ? "playground-layout" : "split-layout"}`}
+      data-mobile-view={mobileView}
+    >
       {/* Sleek Top Navbar */}
       <header className="workspace-header">
         <div className="workspace-logo-area">
@@ -449,6 +455,32 @@ int main() {
           </button>
         </div>
       </header>
+
+      <nav className="workspace-mobile-tabs" aria-label="Workspace panels">
+        {!isPlayground && (
+          <button
+            type="button"
+            className={mobileView === "description" ? "active" : ""}
+            onClick={() => setMobileView("description")}
+          >
+            Problem
+          </button>
+        )}
+        <button
+          type="button"
+          className={mobileView === "code" ? "active" : ""}
+          onClick={() => setMobileView("code")}
+        >
+          Code
+        </button>
+        <button
+          type="button"
+          className={mobileView === "results" ? "active" : ""}
+          onClick={() => setMobileView("results")}
+        >
+          Results
+        </button>
+      </nav>
 
       {/* Split main layout */}
       <div className="workspace-content-pane">

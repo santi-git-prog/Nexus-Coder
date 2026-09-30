@@ -52,7 +52,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  min-width: 100vw;
+  min-width: 320px;
   min-height: 100vh;
   background:
     radial-gradient(circle at 18% 12%, rgba(6, 182, 212, 0.14), transparent 26%),
@@ -65,7 +65,7 @@ body {
 }
 
 #root {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
 }
 
