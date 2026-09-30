@@ -1,23 +1,3 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-let transporter: nodemailer.Transporter | undefined;
-
-const getTransporter = () => {
-  const user = process.env.EMAIL_USER?.trim();
-  const pass = process.env.EMAIL_PASS?.replace(/\s+/g, "");
-  if (!user || !pass) {
-    throw new Error("EMAIL_USER or EMAIL_PASS is not configured");
-  }
-  transporter ??= nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
-  return { client: transporter, user };
-};
-
 export const sendOtpEmail = async (
   email: string,
   otp: string,
@@ -136,21 +116,32 @@ export const sendOtpEmail = async (
     </html>
   `;
 
-  const { client, user } = getTransporter();
-  const mailOptions = {
-    from: `"Nexus Code Support" <${user}>`,
-    to: email,
-    subject: `[Nexus Code] ${title}`,
-    html: htmlContent,
-    text: `${heading}\n\n${description}\n\nYour verification code is ${otp}. It expires in 15 minutes.`,
-  };
-
-  try {
-    const info = await client.sendMail(mailOptions);
-    console.log(`Verification email sent. Message ID: ${info.messageId}`);
-    return info;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw error;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.EMAIL_FROM?.trim();
+  if (!apiKey || !from) {
+    throw new Error("RESEND_API_KEY or EMAIL_FROM is not configured");
   }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: `[Nexus Code] ${title}`,
+      html: htmlContent,
+      text: `${heading}\n\n${description}\n\nYour verification code is ${otp}. It expires in 15 minutes.`,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  const result = await response.json().catch(() => ({})) as { id?: string; message?: string };
+  if (!response.ok) {
+    throw new Error(`Resend API request failed (${response.status}): ${result.message || response.statusText}`);
+  }
+  console.log(`Verification email accepted by provider. Message ID: ${result.id || "unknown"}`);
+  return result;
 };

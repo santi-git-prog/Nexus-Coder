@@ -1,7 +1,14 @@
 import axios from "axios";
 
+const apiBaseUrl = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:5000/api" : "");
+
+if (!apiBaseUrl) {
+  throw new Error("VITE_API_URL must be set to the backend API URL in production.");
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
 });
 
 // Request interceptor to add token

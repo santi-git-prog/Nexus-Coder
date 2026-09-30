@@ -11,6 +11,10 @@ const allowedOrigins = (process.env.FRONTEND_URL || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+if (process.env.NODE_ENV === "production" && allowedOrigins.length === 0) {
+  throw new Error("FRONTEND_URL must contain the deployed frontend origin in production.");
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || process.env.NODE_ENV !== "production" || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {

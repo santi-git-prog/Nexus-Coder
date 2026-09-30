@@ -15,7 +15,7 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      - key: EMAIL_USER
+      - key: RESEND_API_KEY
         sync: false
-      - key: EMAIL_PASS
+      - key: EMAIL_FROM
         sync: false
