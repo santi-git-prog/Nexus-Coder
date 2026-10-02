@@ -5,6 +5,27 @@ import { parseParameters } from "../utils/codeWrapper";
 import { judgeSolution } from "../utils/judge";
 import { judgePythonSolution } from "../utils/pythonJudge";
 
+// GET /api/problems/:problemId/my-submissions
+export const getMySubmissions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { problemId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, language, status, passed_count, total_count, output_summary, code, created_at
+       FROM submissions
+       WHERE user_id = $1 AND problem_id = $2
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [userId, problemId]
+    );
+    return res.json(result.rows);
+  } catch (err: any) {
+    console.error("Error fetching submissions:", err);
+    return res.status(500).json({ message: "Failed to fetch submissions" });
+  }
+};
+
 export const submitProblemSolution = async (req: Request, res: Response) => {
   const userId = (req as any).userId;
   const problemId = req.params.problemId as string;

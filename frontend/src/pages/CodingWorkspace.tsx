@@ -68,6 +68,17 @@ type SubmissionOutcome = {
   testcase_results: TestcaseResult[];
 };
 
+type PastSubmission = {
+  id: string;
+  language: string;
+  status: string;
+  passed_count: number;
+  total_count: number;
+  output_summary: string;
+  code: string;
+  created_at: string;
+};
+
 export default function CodingWorkspace() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -133,6 +144,15 @@ int main() {
   const [promptInput, setPromptInput] = useState<string>("");
   const [loadingHint, setLoadingHint] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string>("");
+
+  // Problem description panel tab ("description" | "submissions")
+  const [problemPanelTab, setProblemPanelTab] = useState<"description" | "submissions">("description");
+
+  // Past submissions
+  const [pastSubmissions, setPastSubmissions] = useState<PastSubmission[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState<boolean>(false);
+  const [viewingSubmission, setViewingSubmission] = useState<PastSubmission | null>(null);
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if user is an admin
@@ -256,6 +276,64 @@ int main() {
     fetchProblemData();
   }, [problemId]);
 
+  // Fetch user's past submissions for this problem
+  const fetchPastSubmissions = async () => {
+    if (!problemId) return;
+    setLoadingSubmissions(true);
+    try {
+      const res = await api.get(`/problems/${problemId}/my-submissions`);
+      setPastSubmissions(res.data);
+    } catch (err) {
+      console.error("Failed to fetch past submissions:", err);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const handleProblemPanelTabChange = (tab: "description" | "submissions") => {
+    setProblemPanelTab(tab);
+    if (tab === "submissions") {
+      fetchPastSubmissions();
+    }
+  };
+
+  const handleCopySubmissionCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
+  };
+
+  const handleLoadSubmissionCode = (sub: PastSubmission) => {
+    setLanguage(sub.language);
+    setCodeMap(prev => ({ ...prev, [sub.language]: sub.code }));
+    setViewingSubmission(null);
+    setMobileView("code");
+  };
+
+  const getSubmissionStatusMeta = (status: string) => {
+    switch (status) {
+      case "Success": return { label: "Accepted", cls: "sub-hist-accepted" };
+      case "Wrong Answer": return { label: "Wrong Answer", cls: "sub-hist-wrong" };
+      case "Compile Error": return { label: "Compile Error", cls: "sub-hist-error" };
+      case "Syntax Error": return { label: "Syntax Error", cls: "sub-hist-error" };
+      case "Runtime Error": return { label: "Runtime Error", cls: "sub-hist-runtime" };
+      case "Time Limit Exceeded": return { label: "TLE", cls: "sub-hist-tle" };
+      default: return { label: status, cls: "sub-hist-error" };
+    }
+  };
+
   const handleRun = async () => {
     if (!code.trim()) return;
 
@@ -365,6 +443,8 @@ int main() {
         const firstFailed = response.data.testcase_results.find((r: any) => !r.passed);
         setActiveTcResultId(firstFailed ? firstFailed.id : response.data.testcase_results[0].id);
       }
+      // Silently refresh submission history so it's ready when user views the tab
+      fetchPastSubmissions();
     } catch (err: any) {
       console.error(err);
       showSubmitError(err.response?.data?.message || "Server error occurred during submission.");
@@ -504,46 +584,157 @@ int main() {
                       ))}
                     </div>
                   </div>
+                  {/* Panel tabs */}
+                  <div className="problem-panel-tabs">
+                    <button
+                      className={`prob-tab-btn ${problemPanelTab === "description" ? "active" : ""}`}
+                      onClick={() => handleProblemPanelTabChange("description")}
+                    >
+                      Description
+                    </button>
+                    <button
+                      className={`prob-tab-btn ${problemPanelTab === "submissions" ? "active" : ""}`}
+                      onClick={() => handleProblemPanelTabChange("submissions")}
+                    >
+                      Submissions
+                    </button>
+                  </div>
                 </div>
 
-                <div className="problem-panel-body">
-                  <div className="description-section">
-                    <p className="markdown-desc">{problem.description}</p>
-                  </div>
-
-                  {problem.constraints && (
+                {/* DESCRIPTION TAB */}
+                {problemPanelTab === "description" && (
+                  <div className="problem-panel-body">
                     <div className="description-section">
-                      <h4>Constraints</h4>
-                      <pre className="constraints-block">{problem.constraints}</pre>
+                      <p className="markdown-desc">{problem.description}</p>
                     </div>
-                  )}
 
-                  {sampleTestcases.length > 0 && (
-                    <div className="description-section examples-section">
-                      <h4>Examples</h4>
-                      <div className="examples-list">
-                        {sampleTestcases.map((tc, idx) => (
-                          <div key={tc.id} className="leetcode-example">
-                            <p className="example-heading">Example {idx + 1}:</p>
-                            <p className="example-line">
-                              <strong>Input:</strong>{" "}
-                              <code>
-                                {tc.input_display || formatArgsDisplay(tc.input)}
-                              </code>
-                            </p>
-                            <p className="example-line">
-                              <strong>Output:</strong>{" "}
-                              <code>
-                                {tc.expected_output_display ||
-                                  formatOutputDisplay(tc.expected_output)}
-                              </code>
-                            </p>
-                          </div>
-                        ))}
+                    {problem.constraints && (
+                      <div className="description-section">
+                        <h4>Constraints</h4>
+                        <pre className="constraints-block">{problem.constraints}</pre>
+                      </div>
+                    )}
+
+                    {sampleTestcases.length > 0 && (
+                      <div className="description-section examples-section">
+                        <h4>Examples</h4>
+                        <div className="examples-list">
+                          {sampleTestcases.map((tc, idx) => (
+                            <div key={tc.id} className="leetcode-example">
+                              <p className="example-heading">Example {idx + 1}:</p>
+                              <p className="example-line">
+                                <strong>Input:</strong>{" "}
+                                <code>
+                                  {tc.input_display || formatArgsDisplay(tc.input)}
+                                </code>
+                              </p>
+                              <p className="example-line">
+                                <strong>Output:</strong>{" "}
+                                <code>
+                                  {tc.expected_output_display ||
+                                    formatOutputDisplay(tc.expected_output)}
+                                </code>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SUBMISSIONS TAB */}
+                {problemPanelTab === "submissions" && (
+                  <div className="submissions-tab-body">
+                    {loadingSubmissions ? (
+                      <div className="submissions-loading">
+                        <span className="spinner"></span>
+                        <p>Loading submissions...</p>
+                      </div>
+                    ) : pastSubmissions.length === 0 ? (
+                      <div className="submissions-empty">
+                        <span className="submissions-empty-icon">📋</span>
+                        <p>No submissions yet.</p>
+                        <span>Submit your solution to see your history here.</span>
+                      </div>
+                    ) : (
+                      <div className="submissions-list">
+                        {pastSubmissions.map((sub) => {
+                          const meta = getSubmissionStatusMeta(sub.status);
+                          const date = new Date(sub.created_at);
+                          const timeAgo = (() => {
+                            const diffMs = Date.now() - date.getTime();
+                            const diffMin = Math.floor(diffMs / 60000);
+                            const diffHr = Math.floor(diffMin / 60);
+                            const diffDay = Math.floor(diffHr / 24);
+                            if (diffDay > 0) return `${diffDay}d ago`;
+                            if (diffHr > 0) return `${diffHr}h ago`;
+                            if (diffMin > 0) return `${diffMin}m ago`;
+                            return "Just now";
+                          })();
+                          return (
+                            <button
+                              key={sub.id}
+                              className="submission-history-row"
+                              onClick={() => setViewingSubmission(sub)}
+                            >
+                              <div className="sub-row-left">
+                                <span className={`sub-status-badge ${meta.cls}`}>{meta.label}</span>
+                                <span className="sub-lang-pill">{sub.language.toUpperCase()}</span>
+                              </div>
+                              <div className="sub-row-right">
+                                <span className="sub-pass-rate">
+                                  {sub.passed_count}/{sub.total_count} passed
+                                </span>
+                                <span className="sub-time-ago">{timeAgo}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Submission Code Viewer Modal */}
+                {viewingSubmission && (
+                  <div className="submission-viewer-overlay" onClick={() => setViewingSubmission(null)}>
+                    <div className="submission-viewer-modal" onClick={(e) => e.stopPropagation()}>
+                      <div className="submission-viewer-header">
+                        <div className="submission-viewer-meta">
+                          <span className={`sub-status-badge ${getSubmissionStatusMeta(viewingSubmission.status).cls}`}>
+                            {getSubmissionStatusMeta(viewingSubmission.status).label}
+                          </span>
+                          <span className="sub-lang-pill">{viewingSubmission.language.toUpperCase()}</span>
+                          <span className="sub-pass-rate">
+                            {viewingSubmission.passed_count}/{viewingSubmission.total_count} passed
+                          </span>
+                          <span className="sub-time-ago">
+                            {new Date(viewingSubmission.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="submission-viewer-actions">
+                          <button
+                            className="sub-copy-btn"
+                            onClick={() => handleCopySubmissionCode(viewingSubmission.code)}
+                          >
+                            {copySuccess ? "✓ Copied!" : "Copy Code"}
+                          </button>
+                          <button
+                            className="sub-load-btn"
+                            onClick={() => handleLoadSubmissionCode(viewingSubmission)}
+                          >
+                            Load into Editor
+                          </button>
+                          <button className="sub-close-btn" onClick={() => setViewingSubmission(null)}>✕</button>
+                        </div>
+                      </div>
+                      <div className="submission-viewer-code">
+                        <pre><code>{viewingSubmission.code}</code></pre>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </aside>
             )}
 

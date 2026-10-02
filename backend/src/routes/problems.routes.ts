@@ -10,7 +10,7 @@ import {
   createTestcase,
   getSampleTestcases,
 } from "../controllers/problems.controller";
-import { submitProblemSolution } from "../controllers/submissions.controller";
+import { submitProblemSolution, getMySubmissions } from "../controllers/submissions.controller";
 import { runProblemCode, runPlaygroundCode } from "../controllers/run.controller";
 
 const router = Router();
@@ -31,6 +31,7 @@ router.get("/problems/:problemId/sample-testcases", authMiddleware, getSampleTes
 // Run (sample / custom) and submit routes
 router.post("/problems/:problemId/run", authMiddleware, runProblemCode);
 router.post("/problems/:problemId/submit", authMiddleware, submitProblemSolution);
+router.get("/problems/:problemId/my-submissions", authMiddleware, getMySubmissions);
 
 // Standalone Online Compiler (no problem context)
 router.post("/run-playground", authMiddleware, runPlaygroundCode);
